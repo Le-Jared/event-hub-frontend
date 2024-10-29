@@ -1,70 +1,56 @@
-# Getting Started with Create React App
+# Quickstart
+```
+git clone
+npm install
+npm run dev
+```
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+Dont forget to run linter before pushing code.
+```
+npm run lint
+npx eslint . --fix
+```
 
-## Available Scripts
+Figma Link (request for access):
+- https://www.figma.com/design/yN5sjkeHbJpEqOk7xMLMuh/StreamHub?node-id=0-1&t=dcrw2f3aemvsZPQP-0
 
-In the project directory, you can run:
+# Objectives
+- Create a project that covers the full SDLC to simulate real-world working environment.
+- Adopt an island architecture, each service layer operates independently and can be seamlessly swapped out.
+- Unit tested and documented, guaranteeing the system will continue to function correctly after any changes to code or team members.
 
-### `npm start`
+# Project Roadmap
+| Sprint 1                        | Sprint 1.5                   | Sprint 2                   | Sprint 2.5             |
+|---------------------------------|------------------------------|----------------------------|------------------------|
+| Database Design (ERD)           | Clear Backlog (Setup)        | Clear Backlog (FE)         | Clear Backlog (BE)     |
+| Setup FE, BE                    | Setup Component Manager      | Build Database Layer       | API Integration        |
+| Connect FE to BE                | Build UI Component Module    | Build Service Layer        | Unit Testing           |
+| Setup Error Management          | Unit Testing                 | Unit Testing               |                        |
+| Deploy and Host on Vercel       |                              |                            |                        |
+| Setup CI, CD                    |                              |                            |                        |
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+# Features (MVP)
+- Dashboard: Display list of movies
+- Search: Implement full text search to search for movies
+- Video Player: Convert MP4 to HLS, implement streaming and buffering
+- Login: Enable users to sign up and login
+- Watch History I: Store watch history of user (episodes)
+- Watch History II: Store watch history of user (watch duration for each episode)
+- Watch Party I: Users can host or join a session to watch a video together
+- Watch Party II: Users can trigger interactive games, or events during watch parties
+- Live Messaging: Users can send instant messages in watch party
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+# Features (Extended)
+- Comment Section
+- Spoiler Flags for Comments
+- Review and Ratings
+- History Based Recommendation System
+- Favourites Page
+- Dark Mode
+- Sharing Link
+- Friend List
 
-### `npm test`
-
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
-
-### `npm run build`
-
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
-
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
-
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
-
-### `npm run eject`
-
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
-
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
-
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
-
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+# Stack
+- BE: SpringBoot
+- FE: React, Tailwind, RadixUI
+- Testing: Vitest, React-Testing-Library
