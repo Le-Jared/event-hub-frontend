@@ -57,6 +57,12 @@ const router = createBrowserRouter([
         path: "viewer/:roomId",  
         element: <ViewerPage />
       },
+      {
+        path: "host",
+        element: (
+            <HostHomePage />
+        ),
+      },
     ],
   },
   {

@@ -36,7 +36,7 @@ const HostLoginPage = () => {
       });
       setUser(data);
       setIsLoggedIn(true);
-      navigate("/");
+      navigate("/host");
     },
     onError: (error: Error) => {
       toast({
