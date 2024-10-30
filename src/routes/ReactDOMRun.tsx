@@ -9,8 +9,7 @@ import ErrorPage from "@/pages/ErrorPage.tsx";
 import { ProtectedRoute } from "./ProtectedRoute";
 import LandingPage from "@/pages/LandingPage";
 import NotFoundPage from "@/pages/NotFoundPage";
-
-import HostRegisterPage from "@/pages/host/HostRegisterPage.tsx";
+import WaitingPage from "@/pages/WaitingRoomPage";
 import GamePage from "@/pages/GamePage.tsx";
 import HostHomePage from "@/pages/host/HostHomePage.tsx";
 
@@ -48,6 +47,12 @@ const router = createBrowserRouter([
             <ProtectedRoute>
               <GamePage />
             </ProtectedRoute>
+        ),
+      },
+      {
+        path: "waiting",
+        element: (
+              <WaitingPage />
         ),
       },
     ],
