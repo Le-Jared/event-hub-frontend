@@ -9,7 +9,7 @@
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "test": "vitest",
     "preview": "vite preview",
-    "postinstall": "npm run dev",
+    "postinstall": "npm run start",
     "start:streamhub": "node start-eventhub.js",
     "serve": "node server.js",
     "start": "concurrently \"npm run dev\" \"npm run serve\""
