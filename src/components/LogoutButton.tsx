@@ -16,7 +16,7 @@ const LogoutButton = () => {
       toast({
         title: "Logged out",
       });
-      navigate("/start");
+      navigate("/");
     } catch (error) {
       // Log the error that occurred during the logout process
       console.error(`Error during logout: ${error}`);
