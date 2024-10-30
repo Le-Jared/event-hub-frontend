@@ -1,32 +1,23 @@
-/// <reference types="vitest" />
-/// <reference types="vite/client" />
-import path from "path";
-import react from "@vitejs/plugin-react";
-import { defineConfig } from "vite";
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import path from 'path';
 
 export default defineConfig({
-  plugins: [
-    react(),
-  ],
+  plugins: [react()],
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "./src"),
-    },
-  },
-  server: {
-    host: true, 
-    proxy: {
-      '/socket.io': {
-        target: 'http://localhost:3000',
-        ws: true
-      }
+      '@': path.resolve(__dirname, './src'),
     }
   },
-  test: {
-    globals: true,
-    environment: "jsdom",
-    setupFiles: ["./src/setupTests"],
+  define: {
+    global: 'globalThis',
   },
+  optimizeDeps: {
+    include: ['simple-peer-light']
+  },
+  build: {
+    commonjsOptions: {
+      include: [/node_modules/]
+    }
+  }
 });
-
-

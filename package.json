@@ -31,13 +31,16 @@
     "@tensorflow/tfjs-backend-webgl": "^4.21.0",
     "@tensorflow/tfjs-core": "^4.21.0",
     "@types/socket.io-client": "^3.0.0",
+    "@types/uuid": "^10.0.0",
     "axios": "^1.7.2",
+    "buffer": "^6.0.3",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
     "cors": "^2.8.5",
     "embla-carousel-react": "^8.1.8",
     "express": "^4.18.2",
     "lucide-react": "^0.400.0",
+    "process": "^0.11.10",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-hook-form": "^7.52.1",
@@ -47,14 +50,20 @@
     "react-router-dom": "^6.24.1",
     "react-webcam": "^7.2.0",
     "shelljs": "^0.8.5",
+    "simple-peer": "^9.11.1",
+    "simple-peer-light": "^9.10.0",
     "socket.io": "^4.8.0",
-    "socket.io-client": "^4.8.0",
+    "socket.io-client": "^4.8.1",
     "sockjs-client": "^1.6.1",
+    "stream-browserify": "^3.0.0",
     "tailwind-merge": "^2.3.0",
     "tailwindcss-animate": "^1.0.7",
+    "util": "^0.12.5",
+    "uuid": "^11.0.2",
     "vaul": "^0.9.1",
     "videojs-contrib-quality-levels": "^3.0.0",
-    "videojs-http-source-selector": "^1.1.6"
+    "videojs-http-source-selector": "^1.1.6",
+    "webrtc-adapter": "^9.0.1"
   },
   "devDependencies": {
     "@testing-library/dom": "^10.3.1",
@@ -64,6 +73,7 @@
     "@types/node": "^20.14.10",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
+    "@types/simple-peer": "^9.11.8",
     "@types/sockjs-client": "^1.5.4",
     "@types/video.js": "^7.3.58",
     "@types/videojs-contrib-quality-levels": "^2.0.4",
@@ -90,4 +100,3 @@
     "vitest": "^1.6.0"
   }
 }
-

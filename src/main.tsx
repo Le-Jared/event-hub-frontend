@@ -3,6 +3,7 @@ import "@/index.css";
 import { QueryClient, QueryClientProvider } from "react-query";
 import { AppContextProvider } from "./contexts/AppContext";
 import ReactDOMRun from "./routes/ReactDOMRun";
+import './polyfills';
 
 const queryClient = new QueryClient({
   defaultOptions: {
