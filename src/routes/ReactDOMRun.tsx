@@ -4,13 +4,13 @@ import {
   Navigate,
   RouterProvider,
 } from "react-router-dom";
-import Root from "@/utils/root";
 import ErrorPage from "@/pages/ErrorPage.tsx";
 import { ProtectedRoute } from "./ProtectedRoute";
 import LandingPage from "@/pages/LandingPage";
 import NotFoundPage from "@/pages/NotFoundPage";
 import WaitingPage from "@/pages/WaitingRoomPage";
-import GamePage from "@/pages/GamePage.tsx";
+import ViewerPage from "@/pages/ViewerPage";
+import EventPage from "@/pages/EventPage";
 import HostHomePage from "@/pages/host/HostHomePage.tsx";
 
 interface ReactDOMRunProps {
@@ -42,11 +42,9 @@ const router = createBrowserRouter([
         ),
       },
       {
-        path: "game",
+        path: "event",
         element: (
-            <ProtectedRoute>
-              <GamePage />
-            </ProtectedRoute>
+              <EventPage />
         ),
       },
       {
@@ -54,6 +52,10 @@ const router = createBrowserRouter([
         element: (
               <WaitingPage />
         ),
+      },
+      {
+        path: "viewer/:roomId",  
+        element: <ViewerPage />
       },
     ],
   },
