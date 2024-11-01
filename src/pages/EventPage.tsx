@@ -1,200 +1,231 @@
-import React, { useEffect, useRef, useState } from 'react';
-import Peer from 'simple-peer';
-import io, { Socket } from 'socket.io-client';
-import { Camera, Monitor, Users, Copy, CheckCheck } from 'lucide-react';
-import { Button } from "@/components/shadcn/ui/button";
+import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { useParams } from 'react-router-dom';
 import { Card, CardContent } from "@/components/shadcn/ui/card";
+import { Button } from "@/components/shadcn/ui/button";
 import { Alert, AlertDescription } from "@/components/shadcn/ui/alert";
-import { v4 as uuidv4 } from 'uuid';
+import { Input } from "@/components/shadcn/ui/input";
+import { Camera, Monitor, Users, Copy, CheckCheck, Loader } from 'lucide-react';
 import { useToast } from "@/components/shadcn/ui/use-toast";
 
-const SIGNALING_SERVER = import.meta.env.VITE_SIGNALING_SERVER || 'http://localhost:3000';
+const WEBSOCKET_URL = 'ws://localhost:8080/stream';
+
+interface WebSocketMessage {
+  type: 'viewer_count' | 'viewer_joined' | 'error';
+  count?: number;
+  message?: string;
+}
 
 const EventPage: React.FC = () => {
   const { toast } = useToast();
-  const [streaming, setStreaming] = useState<boolean>(false);
-  const [viewers, setViewers] = useState<number>(0);
-  const [, setStreamType] = useState<'camera' | 'screen' | null>(null);
-  const [roomId] = useState<string>(uuidv4());
-  const [shareUrl, setShareUrl] = useState<string>('');
-  const [copied, setCopied] = useState<boolean>(false);
+  const { roomId } = useParams<{ roomId: string }>();
+  const [connected, setConnected] = useState(false);
   const [error, setError] = useState<string>('');
-  
+  const [isLoading, setIsLoading] = useState(false);
+  const [streaming, setStreaming] = useState(false);
+  const [viewers, setViewers] = useState(0);
+  const [shareUrl, setShareUrl] = useState('');
+  const [copied, setCopied] = useState(false);
+
+  // Refs
   const videoRef = useRef<HTMLVideoElement>(null);
-  const socketRef = useRef<Socket>();
-  const peersRef = useRef<{ [key: string]: Peer.Instance }>({});
+  const wsRef = useRef<WebSocket>();
+  const mediaRecorderRef = useRef<MediaRecorder>();
   const streamRef = useRef<MediaStream>();
 
+  // Initialize share URL when component mounts or roomId changes
   useEffect(() => {
-    socketRef.current = io(SIGNALING_SERVER);
-    console.log('Connecting to signaling server:', SIGNALING_SERVER);
-    
     const baseUrl = window.location.origin;
     setShareUrl(`${baseUrl}/viewer/${roomId}`);
 
-    const socket = socketRef.current;
-
-    socket.on('connect', () => {
-      console.log('Connected to signaling server with ID:', socket.id);
-    });
-
-    socket.on('connect_error', (error) => {
-      console.error('Connection error:', error);
-      setError('Failed to connect to signaling server');
-    });
-
-    socket.on('viewer-joined', ({ viewerId }) => {
-      console.log('Viewer joined:', viewerId);
-      if (!streamRef.current) {
-        console.error('No stream available for viewer');
-        return;
-      }
-
-      try {
-        const peer = new Peer({
-          initiator: true, 
-          trickle: true,
-          stream: streamRef.current,
-          config: {
-            iceServers: [
-              { urls: 'stun:stun.l.google.com:19302' },
-              { urls: 'stun:global.stun.twilio.com:3478' }
-            ]
-          }
-        });
-
-        peer.on('signal', (signal) => {
-          console.log('Generated signal for viewer:', viewerId);
-          socket.emit('broadcaster-signal', { signal, viewerId });
-        });
-
-        peer.on('connect', () => {
-          console.log('Peer connection established with viewer:', viewerId);
-          setViewers(prev => prev + 1);
-          toast({
-            title: "Viewer Connected",
-            description: "A new viewer has joined your stream.",
-          });
-        });
-
-        peer.on('error', (err) => {
-          console.error('Peer connection error:', err);
-          toast({
-            title: "Connection Error",
-            description: "Error connecting to viewer",
-            variant: "destructive",
-          });
-        });
-
-        peer.on('close', () => {
-          console.log('Peer connection closed:', viewerId);
-          if (peersRef.current[viewerId]) {
-            delete peersRef.current[viewerId];
-            setViewers(prev => Math.max(0, prev - 1));
-          }
-        });
-
-        // Store the peer
-        peersRef.current[viewerId] = peer;
-
-      } catch (err) {
-        console.error('Error creating peer:', err);
-        setError('Failed to create peer connection');
-      }
-    });
-
-    socket.on('viewer-signal', ({ signal, viewerId }) => {
-      console.log('Received viewer signal for viewer:', viewerId);
-      const peer = peersRef.current[viewerId];
-      if (peer) {
-        try {
-          peer.signal(signal);
-        } catch (err) {
-          console.error('Error processing viewer signal:', err);
-        }
-      } else {
-        console.warn('No peer found for viewer:', viewerId);
-      }
-    });
-
-    socket.on('viewer-left', ({ viewerId }) => {
-      console.log('Viewer left:', viewerId);
-      if (peersRef.current[viewerId]) {
-        peersRef.current[viewerId].destroy();
-        delete peersRef.current[viewerId];
-        setViewers(prev => Math.max(0, prev - 1));
-      }
-    });
-
     return () => {
       stopStream();
-      Object.values(peersRef.current).forEach(peer => {
-        try {
-          peer.destroy();
-        } catch (err) {
-          console.error('Error destroying peer:', err);
-        }
-      });
-      socket.disconnect();
     };
   }, [roomId]);
 
+  // WebSocket connection management
+  const connectWebSocket = useCallback(() => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      return;
+    }
+
+    setIsLoading(true);
+    const ws = new WebSocket(`${WEBSOCKET_URL}/${roomId}?type=broadcaster`);
+    wsRef.current = ws;
+
+    ws.onopen = () => {
+      setConnected(true);
+      setIsLoading(false);
+      setError('');
+      toast({
+        title: "Connected",
+        description: "Successfully connected to the stream",
+      });
+    };
+
+    ws.onmessage = (event) => {
+      try {
+        const data: WebSocketMessage = JSON.parse(event.data);
+        switch (data.type) {
+          case 'viewer_count':
+            setViewers(data.count || 0);
+            break;
+          case 'viewer_joined':
+            toast({
+              title: "Viewer Joined",
+              description: "A new viewer has joined your stream.",
+            });
+            break;
+          case 'error':
+            setError(data.message || 'An error occurred');
+            break;
+        }
+      } catch (err) {
+        console.error('Error parsing WebSocket message:', err);
+      }
+    };
+
+    ws.onerror = () => {
+      console.error('WebSocket error:', event);
+      setError('Connection error occurred');
+      setIsLoading(false);
+      setConnected(false);
+      toast({
+        title: "Connection Error",
+        description: "Failed to connect to the stream",
+        variant: "destructive"
+      });
+    };
+
+    ws.onclose = () => {
+      setConnected(false);
+      setIsLoading(false);
+      setStreaming(false);
+      toast({
+        title: "Disconnected",
+        description: "Connection to stream closed",
+        variant: "destructive"
+      });
+
+      // Attempt to reconnect after 5 seconds if we were streaming
+      if (streaming) {
+        setTimeout(() => {
+          if (!wsRef.current || wsRef.current.readyState === WebSocket.CLOSED) {
+            connectWebSocket();
+          }
+        }, 5000);
+      }
+    };
+  }, [roomId, streaming]);
+
+  // Start streaming function
   const startStream = async (type: 'camera' | 'screen') => {
     try {
+      setIsLoading(true);
+      
+      // Get media stream based on type
       const stream = await (type === 'camera' 
-        ? navigator.mediaDevices.getUserMedia({ video: true, audio: true })
-        : navigator.mediaDevices.getDisplayMedia({ video: true, audio: true })
+        ? navigator.mediaDevices.getUserMedia({ 
+            video: { 
+              width: { ideal: 1920 },
+              height: { ideal: 1080 },
+              frameRate: { ideal: 30 }
+            }, 
+            audio: true 
+          })
+        : navigator.mediaDevices.getDisplayMedia({ 
+            video: true, 
+            audio: true 
+          })
       );
 
+      // Set video source
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
       }
-      
-      streamRef.current = stream;
-      setStreamType(type);
-      setStreaming(true);
-      
-      socketRef.current?.emit('start-broadcasting', roomId);
-      console.log('Started broadcasting in room:', roomId);
 
+      // Store stream reference
+      streamRef.current = stream;
+      
+      // Initialize WebSocket connection
+      connectWebSocket();
+
+      // Initialize MediaRecorder with optimal settings
+      const mediaRecorder = new MediaRecorder(stream, {
+        mimeType: 'video/webm;codecs=vp8,opus',
+        videoBitsPerSecond: 3000000, // 3 Mbps
+      });
+
+      // Handle data available event
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0 && wsRef.current?.readyState === WebSocket.OPEN) {
+          wsRef.current.send(event.data);
+        }
+      };
+
+      // Start recording
+      mediaRecorder.start(100); // Send chunks every 100ms
+      mediaRecorderRef.current = mediaRecorder;
+      setStreaming(true);
+      setIsLoading(false);
+
+      // Handle track end events
       stream.getTracks().forEach(track => {
         track.onended = () => {
-          console.log('Track ended, stopping stream');
+          console.log('Track ended:', track.kind);
           stopStream();
         };
+      });
+
+      toast({
+        title: "Stream Started",
+        description: `Started ${type} stream successfully`,
       });
 
     } catch (err) {
       console.error('Error accessing media devices:', err);
       setError('Failed to access media devices');
+      setIsLoading(false);
+      toast({
+        title: "Stream Error",
+        description: "Failed to start stream",
+        variant: "destructive",
+      });
     }
   };
 
-  const stopStream = () => {
-    console.log('Stopping stream');
+  // Stop streaming function
+  const stopStream = useCallback(() => {
+    // Stop MediaRecorder if active
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      mediaRecorderRef.current.stop();
+    }
+
+    // Stop all tracks and clear video source
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(track => track.stop());
       if (videoRef.current) {
         videoRef.current.srcObject = null;
       }
-      streamRef.current = undefined;
     }
 
-    Object.values(peersRef.current).forEach(peer => {
-      try {
-        peer.destroy();
-      } catch (err) {
-        console.error('Error destroying peer:', err);
-      }
-    });
-    peersRef.current = {};
-    
-    setStreaming(false);
-    setStreamType(null);
-    setViewers(0);
-    socketRef.current?.emit('stop-broadcasting', roomId);
-  };
+    // Close WebSocket connection
+    if (wsRef.current) {
+      wsRef.current.close();
+    }
 
+    // Reset state
+    setStreaming(false);
+    setConnected(false);
+    setViewers(0);
+    setError('');
+
+    toast({
+      title: "Stream Ended",
+      description: "Your stream has been stopped",
+    });
+  }, []);
+
+  // Copy share URL function
   const copyShareUrl = async () => {
     try {
       await navigator.clipboard.writeText(shareUrl);
@@ -214,15 +245,68 @@ const EventPage: React.FC = () => {
     }
   };
 
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      stopStream();
+    };
+  }, [stopStream]);
+
   return (
-    <div className="container mx-auto px-4 py-8">
-      <Card className="mb-6">
+    <div className="container mx-auto p-4">
+      <Card className="w-full max-w-4xl mx-auto">
         <CardContent className="p-6">
-          <div className="flex flex-col space-y-4">
-            <div className="flex space-x-4">
+          {/* Connection Status */}
+          <div className="flex items-center gap-2 mb-4">
+            <div className={`w-2 h-2 rounded-full ${connected ? 'bg-green-500' : 'bg-red-500'}`} />
+            <span className="text-sm text-gray-500">
+              {connected ? 'Connected' : 'Disconnected'}
+            </span>
+            {streaming && (
+              <div className="flex items-center ml-4">
+                <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse mr-2" />
+                <span className="text-sm text-gray-500">Live</span>
+              </div>
+            )}
+          </div>
+
+          {/* Error Display */}
+          {error && (
+            <Alert variant="destructive" className="mb-4">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+
+          {/* Video Preview */}
+          <div className="relative aspect-video bg-black rounded-lg overflow-hidden mb-4">
+            {isLoading && (
+              <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+                <Loader className="w-8 h-8 animate-spin text-white" />
+              </div>
+            )}
+            <video
+              ref={videoRef}
+              autoPlay
+              muted
+              playsInline
+              className="w-full h-full"
+            />
+            {!streaming && !isLoading && (
+              <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+                <p className="text-white text-lg">
+                  Start streaming to preview your video
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Controls */}
+          <div className="space-y-4">
+            {/* Stream Control Buttons */}
+            <div className="flex items-center space-x-4">
               <Button
                 onClick={() => startStream('camera')}
-                disabled={streaming}
+                disabled={streaming || isLoading}
                 className="flex items-center"
               >
                 <Camera className="mr-2 h-4 w-4" />
@@ -230,7 +314,7 @@ const EventPage: React.FC = () => {
               </Button>
               <Button
                 onClick={() => startStream('screen')}
-                disabled={streaming}
+                disabled={streaming || isLoading}
                 className="flex items-center"
               >
                 <Monitor className="mr-2 h-4 w-4" />
@@ -246,51 +330,53 @@ const EventPage: React.FC = () => {
               )}
             </div>
 
+            {/* Stream Info and Share URL */}
             {streaming && (
-              <div className="flex items-center space-x-4">
-                <div className="flex items-center">
-                  <Users className="mr-2 h-4 w-4" />
-                  <span>{viewers} viewer{viewers !== 1 ? 's' : ''}</span>
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="text"
-                      value={shareUrl}
-                      readOnly
-                      className="flex-1 p-2 border rounded"
-                    />
-                    <Button
-                      onClick={copyShareUrl}
-                      variant="outline"
-                      className="flex items-center"
-                    >
-                      {copied ? (
-                        <CheckCheck className="h-4 w-4" />
-                      ) : (
-                        <Copy className="h-4 w-4" />
-                      )}
-                    </Button>
+              <>
+                <div className="flex items-center space-x-4">
+                  <div className="flex items-center">
+                    <Users className="mr-2 h-4 w-4" />
+                    <span>{viewers} viewer{viewers !== 1 ? 's' : ''}</span>
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-2">
+                      <Input
+                        value={shareUrl}
+                        readOnly
+                        className="flex-1"
+                      />
+                      <Button
+                        onClick={copyShareUrl}
+                        variant="outline"
+                        className="flex items-center"
+                      >
+                        {copied ? (
+                          <CheckCheck className="h-4 w-4" />
+                        ) : (
+                          <Copy className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
 
-            {error && (
-              <Alert variant="destructive">
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
+                {/* Stream Information Panel */}
+                <div className="mt-4 p-4 border rounded-lg">
+                  <h3 className="text-lg font-semibold mb-2">Stream Information</h3>
+                  <div className="space-y-2">
+                    <p className="text-sm text-gray-500">
+                      Room ID: {roomId}
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      Active Viewers: {viewers}
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      Share URL: {shareUrl}
+                    </p>
+                  </div>
+                </div>
+              </>
             )}
-
-            <div className="aspect-video bg-gray-900 rounded-lg overflow-hidden">
-              <video
-                ref={videoRef}
-                autoPlay
-                playsInline
-                muted
-                className="w-full h-full object-contain"
-              />
-            </div>
           </div>
         </CardContent>
       </Card>

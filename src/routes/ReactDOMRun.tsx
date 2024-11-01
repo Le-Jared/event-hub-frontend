@@ -42,7 +42,7 @@ const router = createBrowserRouter([
         ),
       },
       {
-        path: "event",
+        path: "event/:roomId",
         element: (
               <EventPage />
         ),
