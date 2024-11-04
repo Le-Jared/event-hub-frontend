@@ -12,15 +12,15 @@ import WaitingPage from "@/pages/WaitingRoomPage";
 import ViewerPage from "@/pages/ViewerPage";
 import EventPage from "@/pages/EventPage";
 import HostHomePage from "@/pages/host/HostHomePage.tsx";
+import TestPage from "@/pages/TestPage";
 
-interface ReactDOMRunProps {
-}
+interface ReactDOMRunProps {}
 
 const ReactDOMRun: React.FC<ReactDOMRunProps> = () => {
   return (
-      <>
-        <RouterProvider router={router} />
-      </>
+    <>
+      <RouterProvider router={router} />
+    </>
   );
 };
 
@@ -36,32 +36,26 @@ const router = createBrowserRouter([
       {
         path: "home",
         element: (
-            <ProtectedRoute>
-              <HostHomePage />
-            </ProtectedRoute>
+          <ProtectedRoute>
+            <HostHomePage />
+          </ProtectedRoute>
         ),
       },
       {
         path: "event/:roomId",
-        element: (
-              <EventPage />
-        ),
+        element: <EventPage />,
       },
       {
         path: "waiting",
-        element: (
-              <WaitingPage />
-        ),
+        element: <WaitingPage />,
       },
       {
-        path: "viewer/:roomId",  
-        element: <ViewerPage />
+        path: "viewer/:roomId",
+        element: <ViewerPage />,
       },
       {
         path: "host",
-        element: (
-            <HostHomePage />
-        ),
+        element: <HostHomePage />,
       },
     ],
   },
@@ -73,6 +67,10 @@ const router = createBrowserRouter([
   {
     path: "*",
     element: <Navigate to="/404" replace />,
+  },
+  {
+    path: "timothy-test",
+    element: <TestPage />,
   },
 ]);
 
