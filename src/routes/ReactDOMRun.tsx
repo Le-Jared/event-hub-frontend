@@ -12,6 +12,8 @@ import WaitingPage from "@/pages/WaitingRoomPage";
 import ViewerPage from "@/pages/ViewerPage";
 import EventPage from "@/pages/EventPage";
 import HostHomePage from "@/pages/host/HostHomePage.tsx";
+import HostCreateEvent from "@/pages/host/HostCreateEvent";
+import HostManageEvent from "@/pages/host/HostManageEvent";
 
 interface ReactDOMRunProps {
 }
@@ -61,6 +63,18 @@ const router = createBrowserRouter([
         path: "host",
         element: (
             <HostHomePage />
+        ),
+      },
+      {
+        path: "host/create",
+        element: (
+            <HostCreateEvent/>
+        ),
+      },
+      {
+        path: "host/manage",
+        element: (
+            <HostManageEvent/>
         ),
       },
     ],
