@@ -92,9 +92,15 @@ const LandingPage = () => {
   };
 
   const toggleHostMode = () => {
-    setShowHostButtons(!showHostButtons);
-    // Reset selected option when toggling host mode
-    if (optionSelected === "join event") {
+    if (showHostButtons) {
+      setTransitioning(true);
+      setTimeout(() => {
+        setShowHostButtons(false);
+        setOptionSelected(null);
+        setTransitioning(false);
+      }, TRANSITION_DURATION);
+    } else {
+      setShowHostButtons(true);
       setOptionSelected(null);
     }
   };
@@ -246,12 +252,7 @@ const LandingPage = () => {
         {renderContent()}
       </div>
 
-      {isLoading && (
-        <div className="absolute inset-0 z-10 flex flex-col justify-center items-center bg-black bg-opacity-70">
-          <h2 className="text-s font-bold font-alatsi text-white">Loading</h2>
-          <LoadingSpinner className="size-12 my-2" />
-        </div>
-      )}
+      {isLoading && <LoadingSpinner />}
     </div>
   );
 };

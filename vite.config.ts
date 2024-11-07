@@ -13,11 +13,15 @@ export default defineConfig({
     global: 'globalThis',
   },
   optimizeDeps: {
-    include: ['simple-peer-light']
+    include: [
+      'simple-peer-light',
+      '@splinetool/runtime'
+    ]
   },
   build: {
     commonjsOptions: {
-      include: [/node_modules/]
+      include: [/node_modules/],
+      transformMixedEsModules: true
     }
   }
 });

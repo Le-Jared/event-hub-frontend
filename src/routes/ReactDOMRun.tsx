@@ -1,59 +1,47 @@
-import React from "react";
+import React, { Suspense, lazy } from "react";
 import {
   createBrowserRouter,
   Navigate,
   RouterProvider,
 } from "react-router-dom";
-import ErrorPage from "@/pages/ErrorPage.tsx";
+import ErrorPage from "@/pages/ErrorPage";
 import { ProtectedRoute } from "./ProtectedRoute";
 import LandingPage from "@/pages/LandingPage";
 import NotFoundPage from "@/pages/NotFoundPage";
 import WaitingPage from "@/pages/WaitingRoomPage";
 import ViewerPage from "@/pages/ViewerPage";
 import EventPage from "@/pages/EventPage";
-import HostHomePage from "@/pages/host/HostHomePage.tsx";
+import HostHomePage from "@/pages/host/HostHomePage";
+import SplineLayout from "../routes/SplineLayout";
 import HostCreateEvent from "@/pages/host/HostCreateEvent";
 import HostManageEvent from "@/pages/host/HostManageEvent";
 
-interface ReactDOMRunProps {
-}
-
-const ReactDOMRun: React.FC<ReactDOMRunProps> = () => {
-  return (
-      <>
-        <RouterProvider router={router} />
-      </>
-  );
-};
-
 const router = createBrowserRouter([
+  {
+    path: "/",
+    element: <SplineLayout />,
+    children: [
+      {
+        index: true,
+        element: null, // SplinePage is rendered in the layout
+      },
+    ],
+  },
   {
     path: "/",
     errorElement: <ErrorPage />,
     children: [
       {
-        index: true, // This will serve at the root path ("/")
-        element: <LandingPage />, // Render LandingPage at the root
-      },
-      {
         path: "home",
-        element: (
-            <ProtectedRoute>
-              <HostHomePage />
-            </ProtectedRoute>
-        ),
+        element: <LandingPage />,
       },
       {
         path: "event/:roomId",
-        element: (
-              <EventPage />
-        ),
+        element: <EventPage />,
       },
       {
         path: "waiting",
-        element: (
-              <WaitingPage />
-        ),
+        element: <WaitingPage />,
       },
       {
         path: "viewer/:roomId",  
@@ -61,9 +49,7 @@ const router = createBrowserRouter([
       },
       {
         path: "host",
-        element: (
-            <HostHomePage />
-        ),
+        element: <HostHomePage />,
       },
       {
         path: "host/create",
@@ -83,11 +69,14 @@ const router = createBrowserRouter([
     path: "404",
     element: <NotFoundPage />,
   },
-  // catches all invalid routes
   {
     path: "*",
     element: <Navigate to="/404" replace />,
   },
 ]);
+
+const ReactDOMRun: React.FC = () => {
+  return <RouterProvider router={router} />;
+};
 
 export default ReactDOMRun;

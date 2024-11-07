@@ -26,6 +26,8 @@
     "@radix-ui/react-slot": "^1.1.0",
     "@radix-ui/react-switch": "^1.1.0",
     "@radix-ui/react-toast": "^1.2.1",
+    "@splinetool/react-spline": "^4.0.0",
+    "@splinetool/runtime": "^1.9.36",
     "@stomp/stompjs": "^7.0.0",
     "@tensorflow-models/body-pix": "^2.2.1",
     "@tensorflow-models/body-segmentation": "^1.0.2",
