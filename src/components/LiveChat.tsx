@@ -1,6 +1,4 @@
 import { useEffect, useState } from "react";
-import plus from "/plus-icon.svg";
-import watchParty from "/watch-party.svg";
 import ChatInput from "./ChatInput";
 import { LoadingSpinner } from "./LoadingSpinner";
 import ChatHistory from "./ChatHistory";
@@ -10,6 +8,7 @@ import {
   initWebSocketConnection,
   getPastMessages,
 } from "@/utils/messaging-client";
+import { useParams } from "react-router-dom";
 
 export interface Message {
   messageID: number;
@@ -19,15 +18,18 @@ export interface Message {
   type: string;
 }
 
-interface LiveChatProps {
-  roomID: string;
-}
+// interface LiveChatProps {
+//   roomID: string;
+// }
 
-const LiveChat: React.FC<LiveChatProps> = ({ roomID }) => {
+const LiveChat = () => {
   const [messages, setMessages] = useState<Message[]>([]); // messages state
   const [messageToSend, setMessageToSend] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false); // To handle loading state
   const TRANSITION_DURATION_MS = 500; // fixed transition period in milliseconds
+  const { roomId } = useParams();
+
+  var roomID = roomId || "";
 
   useEffect(() => {
     const fetchMessagesAndSubscribe = async () => {
@@ -47,6 +49,7 @@ const LiveChat: React.FC<LiveChatProps> = ({ roomID }) => {
       const disconnectConnection = initWebSocketConnection({
         roomID: roomID,
         onMessageReceived: (newMessage) => {
+          console.log(`Adding new message: ${newMessage}`);
           setMessages((prevMessages) => [...prevMessages, newMessage]);
         },
       });
@@ -63,14 +66,6 @@ const LiveChat: React.FC<LiveChatProps> = ({ roomID }) => {
       <div className="flex flex-row flex-wrap justify-between p-2 pt-4 border border-0 border-b-2">
         <div className="flex items-center">
           <h2 className="font-alatsi text-stone-50 text-lg ">Live Chat</h2>
-        </div>
-        <div className="flex order-last space-x-3 items-center">
-          <button className="size-auto">
-            <img src={plus} className="size-8"></img>
-          </button>
-          <button className="size-auto">
-            <img src={watchParty} className="size-8"></img>
-          </button>
         </div>
       </div>
 
@@ -95,10 +90,7 @@ const LiveChat: React.FC<LiveChatProps> = ({ roomID }) => {
           setMessageToSend={setMessageToSend}
           roomID={roomID}
         />
-        
       </div>
-
-      
     </div>
   );
 };
