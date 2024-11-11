@@ -50,7 +50,7 @@ const HostRegisterPage = () => {
           title: "Registration successful",
           description: `Welcome, ${data.username}! Please login to continue.`,
         });
-        navigate("/");
+        navigate("/home");
       },
       onError: (error: Error) => {
         toast({
