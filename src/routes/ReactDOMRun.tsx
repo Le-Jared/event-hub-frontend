@@ -44,8 +44,8 @@ const router = createBrowserRouter([
         element: <WaitingPage />,
       },
       {
-        path: "viewer/:roomId",  
-        element: <ViewerPage />
+        path: "viewer/:roomId",
+        element: <ViewerPage />,
       },
       {
         path: "host",
