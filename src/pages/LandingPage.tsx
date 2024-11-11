@@ -6,18 +6,19 @@ import { useAppContext } from "@/contexts/AppContext";
 import { useForm } from "react-hook-form";
 import { useMutation } from "react-query";
 import { User } from "@/utils/types";
+import { joinEvent } from "@/utils/api-client";
 import { useNavigate } from "react-router-dom";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import HostLoginPage from "./host/HostLoginPage";
 import HostRegisterPage from "./host/HostRegisterPage";
 
-type JoinEventFormData = {
+export type JoinEventFormData = {
   code: string;
   password: string;
   displayName: string;
 };
 
-type JoinEventResponseData = {
+export type JoinEventResponseData = {
   token: string;
   videoSource: string;
   roomId: string;

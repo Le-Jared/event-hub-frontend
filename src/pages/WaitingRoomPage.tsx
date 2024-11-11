@@ -1,34 +1,92 @@
-import React, { useState, useEffect } from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/shadcn/ui/tabs";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/ui/card";
-import { Gamepad2, Dices, Grid3X3, Calculator, Clock } from 'lucide-react';
-import Pong from '../components/Pong';
-import Checkers from '../components/Checkers';
-import Tetris from '../components/Tetris';
-import Game2048 from '../components/2048';
+import React, { useState, useEffect } from "react";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/shadcn/ui/tabs";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/shadcn/ui/card";
+import { Gamepad2, Dices, Grid3X3, Calculator, Clock } from "lucide-react";
+import Pong from "../components/Pong";
+import Checkers from "../components/Checkers";
+import Tetris from "../components/Tetris";
+import Game2048 from "../components/2048";
+import { useParams } from "react-router-dom";
+
+type RoomDetails = {
+  id: number;
+  reminderEmailSent: boolean;
+  eventName: string;
+  code: string;
+  password: string;
+  scheduledDate: string; // store as a string for easy formatting
+  scheduledTime: string; // store as a string for easy formatting
+  createdDate: string;
+};
 
 const WaitingRoomPage: React.FC = () => {
-  const eventDateTime = new Date('2024-10-30T14:00:00');
-  const [timeLeft, setTimeLeft] = useState<string>('');
+  const { roomId } = useParams();
+  const [roomDetails, setRoomDetails] = useState<RoomDetails | null>(null);
+  const [timeLeft, setTimeLeft] = useState<string>("");
+
+  const getEvent = async (eventCode: string): Promise<RoomDetails> => {
+    const response = await fetch(
+      `http://localhost:8080/api/event/get/${eventCode}`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+    if (!response.ok) {
+      const errorMessage = await response.text();
+      throw new Error(errorMessage || "Failed to fetch event details");
+    }
+    return response.json();
+  };
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      const now = new Date();
-      const difference = eventDateTime.getTime() - now.getTime();
+    // Fetch event details when component mounts
+    if (roomId) {
+      getEvent(roomId)
+        .then((data) => {
+          setRoomDetails(data);
 
-      if (difference > 0) {
-        const hours = Math.floor(difference / (1000 * 60 * 60));
-        const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
-        const seconds = Math.floor((difference % (1000 * 60)) / 1000);
-        setTimeLeft(`${hours}h ${minutes}m ${seconds}s`);
-      } else {
-        setTimeLeft('Event has started!');
-        clearInterval(timer);
-      }
-    }, 1000);
+          // Parse and calculate time left
+          const eventDateTime = new Date(
+            `${data.scheduledDate}T${data.scheduledTime}`
+          );
+          const timer = setInterval(() => {
+            const now = new Date();
+            const difference = eventDateTime.getTime() - now.getTime();
 
-    return () => clearInterval(timer);
-  }, []);
+            if (difference > 0) {
+              const hours = Math.floor(difference / (1000 * 60 * 60));
+              const minutes = Math.floor(
+                (difference % (1000 * 60 * 60)) / (1000 * 60)
+              );
+              const seconds = Math.floor((difference % (1000 * 60)) / 1000);
+              setTimeLeft(`${hours}h ${minutes}m ${seconds}s`);
+            } else {
+              setTimeLeft("Event has started!");
+              clearInterval(timer);
+            }
+          }, 1000);
+
+          return () => clearInterval(timer);
+        })
+        .catch((error) =>
+          console.error("Error fetching event details:", error)
+        );
+    }
+  }, [roomId]);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 to-indigo-900 text-white">
@@ -41,9 +99,13 @@ const WaitingRoomPage: React.FC = () => {
             <Clock className="w-6 h-6" />
             <span>Time until event: {timeLeft}</span>
           </div>
-          <p className="mt-2 text-gray-300">
-            Event starts: {eventDateTime.toLocaleString()}
-          </p>
+          {roomDetails && (
+            <p className="mt-2 text-gray-300">
+              Event: {roomDetails.eventName} <br />
+              Scheduled Start: {roomDetails.scheduledDate} at{" "}
+              {roomDetails.scheduledTime}
+            </p>
+          )}
         </div>
 
         <div>
@@ -52,16 +114,28 @@ const WaitingRoomPage: React.FC = () => {
           </h2>
           <Tabs defaultValue="pong" className="w-full">
             <TabsList className="grid w-full grid-cols-4 mb-8">
-              <TabsTrigger value="pong" className="text-lg flex items-center justify-center">
+              <TabsTrigger
+                value="pong"
+                className="text-lg flex items-center justify-center"
+              >
                 <Grid3X3 className="mr-2" /> Pong
               </TabsTrigger>
-              <TabsTrigger value="checkers" className="text-lg flex items-center justify-center">
+              <TabsTrigger
+                value="checkers"
+                className="text-lg flex items-center justify-center"
+              >
                 <Gamepad2 className="mr-2" /> Checkers
               </TabsTrigger>
-              <TabsTrigger value="tetris" className="text-lg flex items-center justify-center">
+              <TabsTrigger
+                value="tetris"
+                className="text-lg flex items-center justify-center"
+              >
                 <Dices className="mr-2" /> Tetris
               </TabsTrigger>
-              <TabsTrigger value="2048" className="text-lg flex items-center justify-center">
+              <TabsTrigger
+                value="2048"
+                className="text-lg flex items-center justify-center"
+              >
                 <Calculator className="mr-2" /> 2048
               </TabsTrigger>
             </TabsList>
@@ -71,7 +145,9 @@ const WaitingRoomPage: React.FC = () => {
                 <Card>
                   <CardHeader>
                     <CardTitle>2 Player Pong</CardTitle>
-                    <CardDescription>Classic 1 vs 1 game. Beat your opponent</CardDescription>
+                    <CardDescription>
+                      Classic 1 vs 1 game. Beat your opponent
+                    </CardDescription>
                   </CardHeader>
                   <CardContent>
                     <Pong />
@@ -83,7 +159,9 @@ const WaitingRoomPage: React.FC = () => {
                 <Card>
                   <CardHeader>
                     <CardTitle>Checkers</CardTitle>
-                    <CardDescription>Strategic board game for two players.</CardDescription>
+                    <CardDescription>
+                      Strategic board game for two players.
+                    </CardDescription>
                   </CardHeader>
                   <CardContent>
                     <Checkers />
@@ -95,7 +173,9 @@ const WaitingRoomPage: React.FC = () => {
                 <Card>
                   <CardHeader>
                     <CardTitle>Tetris</CardTitle>
-                    <CardDescription>Arrange falling blocks to clear lines!</CardDescription>
+                    <CardDescription>
+                      Arrange falling blocks to clear lines!
+                    </CardDescription>
                   </CardHeader>
                   <CardContent>
                     <Tetris />
@@ -107,7 +187,9 @@ const WaitingRoomPage: React.FC = () => {
                 <Card>
                   <CardHeader>
                     <CardTitle>2048</CardTitle>
-                    <CardDescription>Merge tiles to reach 2048!</CardDescription>
+                    <CardDescription>
+                      Merge tiles to reach 2048!
+                    </CardDescription>
                   </CardHeader>
                   <CardContent>
                     <Game2048 />
