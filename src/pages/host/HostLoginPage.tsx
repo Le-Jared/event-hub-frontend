@@ -39,6 +39,7 @@ const HostLoginPage = () => {
       navigate("/host");
     },
     onError: (error: Error) => {
+      setIsLoading(false);
       toast({
         title: "Login Error",
         description: error.message,

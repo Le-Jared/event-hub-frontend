@@ -14,6 +14,7 @@ import {
   WatchPartyFormData,
   WatchPartyResponseData,
 } from "@/pages/CreateWatchPartyPage";
+import { CreateEventFormData } from "@/pages/host/HostCreateEvent.tsx";
 
 
 const API_BASE_URL = "http://localhost:8080";
@@ -241,3 +242,47 @@ export const sendChatMessage = async (userInput: string) => {
   }
 };
 
+export const createEvent = async (formData: CreateEventFormData) => {
+  const response = await axios
+    .post(
+      `${API_BASE_URL}/api/event/create`,
+      {
+        eventName: formData.eventName,
+        accountID: "1",
+        password: formData.password,
+        scheduledDate: formData.scheduledDate,
+        scheduledTime: formData.scheduledTime
+      },
+      {
+        headers: {
+          "Content-Type": "application/json",
+        }
+      }
+    )
+    .then((response) => {
+      return response;
+    })
+    .catch((error) => {
+      throw new Error(error.message);
+    });
+  return response;
+}
+
+export const getEvents = async (accountID: string) => {
+  const response = await axios
+    .get(
+      `${API_BASE_URL}/api/event/getByUserId/${accountID}`,
+      {
+        headers: {
+          "Content-Type": "application/json",
+        }
+      }
+    )
+    .then((response) => {
+      return response;
+    })
+    .catch((error) => {
+      throw new Error(error.message);
+    });
+  return response;
+}
