@@ -54,7 +54,7 @@ const dummyComponents: ComponentItem[] = [
 ];
 
 const LiveIndicator: React.FC<StreamStatus> = ({ isLive, viewerCount }) => (
-  <div className="flex items-center space-x-4">
+  <div className="flex items-center space-x-4 text-white">
     <div className="flex items-center">
       <Badge 
         variant={isLive ? "destructive" : "secondary"}
@@ -203,9 +203,9 @@ const EventPage: React.FC = () => {
 
   return (
     <DragDropContext onDragEnd={handleDragEnd}>
-      <div className="flex flex-col h-screen bg-gray-100">
+      <div className="flex flex-col h-screen bg-gray-900 text-white">
         {/* Stream Status Bar */}
-        <div className="bg-white p-4 shadow-sm">
+        <div className="bg-gray-800 p-4 shadow-sm">
           <div className="max-w-7xl mx-auto flex justify-between items-center">
             <LiveIndicator {...streamStatus} />
             <Button
@@ -226,7 +226,7 @@ const EventPage: React.FC = () => {
                 <Card 
                   ref={provided.innerRef}
                   {...provided.droppableProps}
-                  className={`h-full flex items-center justify-center bg-white ${
+                  className={`h-full flex items-center justify-center bg-gray-800 ${
                     snapshot.isDraggingOver ? 'border-2 border-blue-400' : ''
                   }`}
                 >
@@ -241,7 +241,7 @@ const EventPage: React.FC = () => {
                           className="mx-auto mb-4 rounded-lg shadow-md"
                         />
                       )}
-                      <p className="text-gray-500">{currentComponent.content}</p>
+                      <p className="text-white">{currentComponent.content}</p>
                     </div>
                   ) : (
                     <p className="text-gray-400">Drag a component here</p>
@@ -253,9 +253,9 @@ const EventPage: React.FC = () => {
           </div>
 
           {/* Right Sidebar: Components Panel and Interaction Component */}
-          <div className="flex-1 bg-white shadow-lg flex flex-col">
+          <div className="flex-1 bg-gray-800 shadow-lg flex flex-col">
             {/* Components Panel */}
-            <div className="p-4 border-b">
+            <div className="p-4 border-b border-gray-700">
               <h2 className="text-lg font-semibold mb-4">Components</h2>
               <Droppable droppableId="components-list">
                 {(provided, snapshot) => (
@@ -263,7 +263,7 @@ const EventPage: React.FC = () => {
                     <div
                       ref={provided.innerRef}
                       {...provided.droppableProps}
-                      className={`space-y-2 ${snapshot.isDraggingOver ? 'bg-gray-50' : ''}`}
+                      className={`space-y-2 ${snapshot.isDraggingOver ? 'bg-gray-700' : ''}`}
                     >
                       {components.map((item, index) => (
                         <Draggable
@@ -276,15 +276,15 @@ const EventPage: React.FC = () => {
                               ref={provided.innerRef}
                               {...provided.draggableProps}
                               {...provided.dragHandleProps}
-                              className={`p-4 cursor-move hover:bg-gray-50 ${
+                              className={`p-4 cursor-move bg-gray-700 hover:bg-gray-600 ${
                                 snapshot.isDragging ? 'shadow-lg' : ''
                               }`}
                             >
                               <div className="flex items-center space-x-3">
                                 {item.icon}
                                 <div>
-                                  <h3 className="font-medium">{item.title}</h3>
-                                  <p className="text-sm text-gray-500">{item.type}</p>
+                                  <h3 className="font-medium text-white">{item.title}</h3>
+                                  <p className="text-sm text-gray-300">{item.type}</p>
                                 </div>
                               </div>
                             </Card>
@@ -301,10 +301,10 @@ const EventPage: React.FC = () => {
             {/* Interaction Component */}
             <div className="flex-1 p-4">
               <Select onValueChange={(value: 'chat' | 'qa' | 'poll') => setInteractionType(value)}>
-                <SelectTrigger className="w-full mb-2">
+                <SelectTrigger className="w-full mb-2 bg-gray-700 text-white">
                   <SelectValue placeholder="Select interaction type" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-gray-700 text-white">
                   <SelectItem value="chat">
                     <div className="flex items-center">
                       <MessageSquare className="w-4 h-4 mr-2" />
@@ -325,7 +325,7 @@ const EventPage: React.FC = () => {
                   </SelectItem>
                 </SelectContent>
               </Select>
-              <Card className="h-full overflow-y-auto">
+              <Card className="h-full overflow-y-auto bg-gray-700 text-white">
                 {renderInteractionComponent()}
               </Card>
             </div>
