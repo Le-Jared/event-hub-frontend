@@ -1,21 +1,8 @@
 import { LoginFormData } from "../pages/host/HostLoginPage.tsx";
 import { RegisterFormData } from "../pages/host/HostRegisterPage.tsx";
-
 import axios from "axios";
 import { User } from "@/utils/types";
-import { UpdateFormData } from "../pages/UpdateProfilePage";
-import { PollRequestData } from "@/components/PollForm";
-import { PollResponse } from "@/pages/WatchPartyPage";
-import { WatchPartyResponse } from "@/pages/PollResultPage";
-import { UpdateWatchPartyForm, UpdateWatchPartyPasswordForm } from "@/pages/ManageWatchPartyPage";
-import { PollOptionResponseData, PollResponseData } from "@/pages/CreatePollPage";
-import { UpdatePollForm } from "@/pages/ManagePollPage";
-import {
-  WatchPartyFormData,
-  WatchPartyResponseData,
-} from "@/pages/CreateWatchPartyPage";
 import { CreateEventFormData } from "@/pages/host/HostCreateEvent.tsx";
-
 
 const API_BASE_URL = "http://localhost:8080";
 
