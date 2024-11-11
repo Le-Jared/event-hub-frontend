@@ -2,7 +2,6 @@ import LiveChat from "@/components/LiveChat";
 import PollView from "@/components/PollView";
 import VideoJSSynced from "@/components/VideoJSSynced";
 import VideoChatbot from "@/components/ChatBot";
-// import { addVote, changeVote, getWatchpartyPoll } from "@/utils/api-client";
 import { useEffect, useState } from "react";
 import { useLocation, useParams } from "react-router";
 import { useAppContext } from "@/contexts/AppContext";
@@ -22,22 +21,18 @@ const ViewerPage = () => {
   const params = useParams();
 
   let location = useLocation();
-  console.log(location);
   const data = {
     videoSource:
       "http://localhost:8080/encoded/steamboatwillie_001/master.m3u8",
     isHost: false,
   };
   const isHost = false;
-  console.log("User is host: " + isHost);
-  console.log("Video url is: " + data.videoSource);
 
   const sessionId = params.sessionId ? params.sessionId.toString() : "1";
   const videoJsOptions = {
     sources: [
       {
         src: data.videoSource,
-        // src: "http://localhost:8080/encoded/steamboatwillie_001/master.m3u8",
         type: "application/x-mpegURL",
       },
     ],
@@ -51,10 +46,14 @@ const ViewerPage = () => {
 
   const { user } = useAppContext();
 
-  const [optionSelected, setOptionSelected] = useState<string | null>(null);
+  const [optionSelected, setOptionSelected] = useState<string | null>("video"); // Default to "video"
   const [transitioning, setTransitioning] = useState(false);
   const TRANSITION_DURATION = 500;
   const buttonTextFormat = "text-3xl mx-8 px-8 py-6 font-alatsi text-white";
+
+  // Define consistent dimensions for the content area
+  const contentWrapperStyle =
+    "w-full h-[500px] md:h-[600px] bg-gray-900 flex items-center justify-center mb-6"; // Adjust height as needed
 
   const renderContent = () => {
     switch (optionSelected) {
@@ -68,9 +67,13 @@ const ViewerPage = () => {
           />
         );
       case "slides":
-        return <p className="text-white text-center text-3xl">Slides</p>;
+        return (
+          <p className="text-white text-center text-3xl">Slides Placeholder</p>
+        );
       case "textarea":
-        return <p className="text-white text-center text-3xl">Placeholder</p>;
+        return (
+          <p className="text-white text-center text-3xl">Text Placeholder</p>
+        );
       default:
         return null;
     }
@@ -100,18 +103,11 @@ const ViewerPage = () => {
 
   return (
     <div>
-      <div className="grid grid-cols-1 gap-y-2 md:grid-cols-4 md:gap-x-4 ">
+      <div className="grid grid-cols-1 gap-y-2 md:grid-cols-4 md:gap-x-4">
         <div className="col-span-3 min-h-80">
-          <div className="flex items-center justify-center">
-            {renderContent()}
-          </div>
-          {/* <VideoJSSynced
-            blockDisposePlayer={blockDisposePlayer}
-            options={videoJsOptions}
-            roomID={roomID}
-            isHost={isHost}
-          /> */}
-          <div className="flex items-center justify-center">
+          <div className={contentWrapperStyle}>{renderContent()}</div>
+
+          <div className="flex items-center justify-center mt-4">
             <Button
               onClick={() => handleButtonClick("video")}
               variant="ghost"
@@ -135,6 +131,7 @@ const ViewerPage = () => {
             </Button>
           </div>
         </div>
+
         <div className="col-span-1">
           <LiveChat />
         </div>
