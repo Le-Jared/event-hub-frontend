@@ -17,6 +17,13 @@ type JoinEventFormData = {
   displayName: string;
 };
 
+type JoinEventResponseData = {
+  token: string;
+  videoSource: string;
+  roomId: string;
+  host: boolean;
+};
+
 const LandingPage = () => {
   const [optionSelected, setOptionSelected] = useState<string | null>(null);
   const [transitioning, setTransitioning] = useState(false);
@@ -35,7 +42,11 @@ const LandingPage = () => {
   const buttonTextFormat = "text-3xl mx-8 px-8 py-6 font-alatsi";
   const TRANSITION_DURATION = 300;
 
-  const joinEventMutation = useMutation<User, Error, JoinEventFormData>(
+  const joinEventMutation = useMutation<
+    JoinEventResponseData,
+    Error,
+    JoinEventFormData
+  >(
     async (data: JoinEventFormData) => {
       const response: Response = await fetch(
         "http://localhost:8080/api/event/join",
@@ -54,7 +65,7 @@ const LandingPage = () => {
       return await response.json();
     },
     {
-      onSuccess: (data) => {
+      onSuccess: (data: JoinEventResponseData) => {
         const { roomId: code } = data;
         setIsLoading(false);
         toast({
