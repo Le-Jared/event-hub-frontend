@@ -1,15 +1,61 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import { Card, CardContent } from "@/components/shadcn/ui/card";
+import {
+  DragDropContext,
+  Droppable,
+  Draggable,
+  type DropResult,
+} from "@/components/shadcn/ui/dnd";
 import { Button } from "@/components/shadcn/ui/button";
 import { Alert, AlertDescription } from "@/components/shadcn/ui/alert";
 import { Input } from "@/components/shadcn/ui/input";
-import { Camera, Monitor, Users, Copy, CheckCheck, Loader } from "lucide-react";
+import {
+  Image,
+  Camera,
+  Monitor,
+  Users,
+  Copy,
+  CheckCheck,
+  Loader,
+  FileQuestion,
+  Video,
+  Radio,
+  MessageSquare,
+  HelpCircle,
+  BarChart,
+} from "lucide-react";
 import { useToast } from "@/components/shadcn/ui/use-toast";
 import { useAppContext } from "@/contexts/AppContext";
 import { ModuleConnection, sendModuleAction } from "@/utils/messaging-client";
+import { Badge } from "@/components/shadcn/ui/badge";
+import LiveChat from "@/components/LiveChat";
+import { ScrollArea } from "@/components/shadcn/ui/scroll-area";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/shadcn/ui/select";
 
-const WEBSOCKET_URL = "ws://localhost:8080/stream";
+// WebSocket connection
+const WS_URL = "ws://localhost:8080/event";
+
+interface ComponentItem {
+  id: string;
+  type: string;
+  title: string;
+  icon: React.ReactNode;
+  content: string;
+  imageUrl?: string;
+}
+
+interface StreamStatus {
+  isLive: boolean;
+  viewerCount: number;
+  roomId?: string;
+}
 
 interface WebSocketMessage {
   type: "viewer_count" | "viewer_joined" | "error";
@@ -24,6 +70,53 @@ export type ModuleAction = {
   ID: string;
 };
 
+const dummyComponents: ComponentItem[] = [
+  {
+    id: "1",
+    type: "slide",
+    title: "Introduction Slide",
+    icon: <Image className="w-6 h-6" />,
+    content: "Welcome to the presentation!",
+    imageUrl: "https://picsum.photos/400/300?random=1",
+  },
+  {
+    id: "2",
+    type: "video",
+    title: "Demo Video",
+    icon: <Video className="w-6 h-6" />,
+    content: "Product demonstration video",
+    imageUrl: "https://picsum.photos/400/300?random=2",
+  },
+  {
+    id: "3",
+    type: "quiz",
+    title: "Knowledge Check",
+    icon: <FileQuestion className="w-6 h-6" />,
+    content: "Test your understanding",
+    imageUrl: "https://picsum.photos/400/300?random=3",
+  },
+];
+
+const LiveIndicator: React.FC<StreamStatus> = ({ isLive, viewerCount }) => (
+  <div className="flex items-center space-x-4 text-white">
+    <div className="flex items-center">
+      <Badge
+        variant={isLive ? "destructive" : "secondary"}
+        className="flex items-center gap-2"
+      >
+        <Radio className="w-4 h-4 animate-pulse" />
+        <span>{isLive ? "LIVE" : "OFFLINE"}</span>
+      </Badge>
+    </div>
+    {isLive && (
+      <div className="flex items-center space-x-2">
+        <Users className="w-4 h-4" />
+        <span className="text-sm font-medium">{viewerCount} viewers</span>
+      </div>
+    )}
+  </div>
+);
+
 const EventPage: React.FC = () => {
   const { toast } = useToast();
   const { roomId } = useParams<{ roomId: string }>();
@@ -34,6 +127,17 @@ const EventPage: React.FC = () => {
   const [viewers, setViewers] = useState(0);
   const [shareUrl, setShareUrl] = useState("");
   const [copied, setCopied] = useState(false);
+  const [interactionType, setInteractionType] = useState<
+    "chat" | "qa" | "poll"
+  >("chat");
+  const [socket, setSocket] = useState<WebSocket | null>(null);
+  const [currentComponent, setCurrentComponent] =
+    useState<ComponentItem | null>(null);
+  const [components] = useState<ComponentItem[]>(dummyComponents);
+  const [streamStatus, setStreamStatus] = useState<StreamStatus>({
+    isLive: false,
+    viewerCount: 0,
+  });
 
   const { user } = useAppContext();
 
@@ -54,156 +158,206 @@ const EventPage: React.FC = () => {
   }, [roomId]);
 
   // WebSocket connection management
-  const connectWebSocket = useCallback(() => {
-    if (wsRef.current?.readyState === WebSocket.OPEN) {
-      return;
-    }
-
-    setIsLoading(true);
-    const ws = new WebSocket(`${WEBSOCKET_URL}/${roomId}?type=broadcaster`);
-    wsRef.current = ws;
-
-    ws.onopen = () => {
-      setConnected(true);
-      setIsLoading(false);
-      setError("");
-      toast({
-        title: "Connected",
-        description: "Successfully connected to the stream",
-      });
-    };
-
-    ws.onmessage = (event) => {
-      try {
-        const data: WebSocketMessage = JSON.parse(event.data);
-        switch (data.type) {
-          case "viewer_count":
-            setViewers(data.count || 0);
-            break;
-          case "viewer_joined":
-            toast({
-              title: "Viewer Joined",
-              description: "A new viewer has joined your stream.",
-            });
-            break;
-          case "error":
-            setError(data.message || "An error occurred");
-            break;
-        }
-      } catch (err) {
-        console.error("Error parsing WebSocket message:", err);
-      }
-    };
-
-    ws.onerror = () => {
-      console.error("WebSocket error:", event);
-      setError("Connection error occurred");
-      setIsLoading(false);
-      setConnected(false);
-      toast({
-        title: "Connection Error",
-        description: "Failed to connect to the stream",
-        variant: "destructive",
-      });
-    };
-
-    ws.onclose = () => {
-      setConnected(false);
-      setIsLoading(false);
-      setStreaming(false);
-      toast({
-        title: "Disconnected",
-        description: "Connection to stream closed",
-        variant: "destructive",
-      });
-
-      // Attempt to reconnect after 5 seconds if we were streaming
-      if (streaming) {
-        setTimeout(() => {
-          if (!wsRef.current || wsRef.current.readyState === WebSocket.CLOSED) {
-            connectWebSocket();
-          }
-        }, 5000);
-      }
-    };
-  }, [roomId, streaming]);
-
-  // Start streaming function
-  const startStream = async (type: "camera" | "screen") => {
+  const connectWebSocket = () => {
     try {
-      setIsLoading(true);
+      const ws = new WebSocket(WS_URL);
 
-      // Get media stream based on type
-      const stream = await (type === "camera"
-        ? navigator.mediaDevices.getUserMedia({
-            video: {
-              width: { ideal: 1920 },
-              height: { ideal: 1080 },
-              frameRate: { ideal: 30 },
-            },
-            audio: true,
+      ws.onopen = () => {
+        console.log("Connected to WebSocket");
+        setStreamStatus((prev) => ({ ...prev, isLive: true }));
+        // Join the room as a broadcaster
+        ws.send(
+          JSON.stringify({
+            type: "JOIN_ROOM",
+            role: "broadcaster",
           })
-        : navigator.mediaDevices.getDisplayMedia({
-            video: true,
-            audio: true,
-          }));
+        );
+      };
 
-      // Set video source
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-      }
+      ws.onerror = (error) => {
+        console.error("WebSocket error:", error);
+        setStreamStatus((prev) => ({ ...prev, isLive: false }));
+      };
 
-      // Store stream reference
-      streamRef.current = stream;
-
-      // Initialize WebSocket connection
-      connectWebSocket();
-
-      // Initialize MediaRecorder with optimal settings
-      const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: "video/webm;codecs=vp8,opus",
-        videoBitsPerSecond: 3000000, // 3 Mbps
-      });
-
-      // Handle data available event
-      mediaRecorder.ondataavailable = (event) => {
-        if (
-          event.data.size > 0 &&
-          wsRef.current?.readyState === WebSocket.OPEN
-        ) {
-          wsRef.current.send(event.data);
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          switch (data.type) {
+            case "COMPONENT_CHANGE":
+              if (data.component) {
+                setCurrentComponent(data.component);
+              }
+              break;
+            case "VIEWER_COUNT":
+              setStreamStatus((prev) => ({
+                ...prev,
+                viewerCount: data.count,
+              }));
+              break;
+            default:
+              break;
+          }
+        } catch (error) {
+          console.error("Error parsing WebSocket message:", error);
         }
       };
 
-      // Start recording
-      mediaRecorder.start(100); // Send chunks every 100ms
-      mediaRecorderRef.current = mediaRecorder;
-      setStreaming(true);
-      setIsLoading(false);
+      ws.onclose = () => {
+        console.log("Disconnected from WebSocket");
+        setStreamStatus({ isLive: false, viewerCount: 0 });
+        // Attempt to reconnect after 5 seconds
+        setTimeout(() => {
+          if (streamStatus.isLive) {
+            connectWebSocket();
+          }
+        }, 5000);
+      };
 
-      // Handle track end events
-      stream.getTracks().forEach((track) => {
-        track.onended = () => {
-          console.log("Track ended:", track.kind);
-          stopStream();
-        };
-      });
-
-      toast({
-        title: "Stream Started",
-        description: `Started ${type} stream successfully`,
-      });
-    } catch (err) {
-      console.error("Error accessing media devices:", err);
-      setError("Failed to access media devices");
-      setIsLoading(false);
-      toast({
-        title: "Stream Error",
-        description: "Failed to start stream",
-        variant: "destructive",
-      });
+      setSocket(ws);
+    } catch (error) {
+      console.error("Error connecting to WebSocket:", error);
+      setStreamStatus((prev) => ({ ...prev, isLive: false }));
     }
   };
+
+  const disconnectWebSocket = () => {
+    if (socket) {
+      socket.close();
+      setSocket(null);
+    }
+  };
+
+  const handleGoLive = () => {
+    if (!streamStatus.isLive) {
+      connectWebSocket();
+    } else {
+      disconnectWebSocket();
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      disconnectWebSocket();
+    };
+  }, []);
+
+  const handleDragEnd = (result: DropResult): void => {
+    const { destination, source, draggableId } = result;
+
+    if (
+      !destination ||
+      (destination.droppableId === source.droppableId &&
+        destination.index === source.index)
+    ) {
+      return;
+    }
+
+    if (destination.droppableId === "main-stage") {
+      const component = components.find((item) => item.id === draggableId);
+      if (component) {
+        setCurrentComponent(component);
+
+        if (socket?.readyState === WebSocket.OPEN) {
+          socket.send(
+            JSON.stringify({
+              type: "COMPONENT_CHANGE",
+              component,
+            })
+          );
+        }
+      }
+    }
+  };
+
+  const renderInteractionComponent = () => {
+    switch (interactionType) {
+      case "chat":
+        return <LiveChat />;
+      case "qa":
+        return <div>Q&A Component</div>;
+      case "poll":
+        return <div>Poll Component</div>;
+      default:
+        return null;
+    }
+  };
+
+  // Start streaming function
+  // const startStream = async (type: "camera" | "screen") => {
+  //   try {
+  //     setIsLoading(true);
+
+  //     // Get media stream based on type
+  //     const stream = await (type === "camera"
+  //       ? navigator.mediaDevices.getUserMedia({
+  //           video: {
+  //             width: { ideal: 1920 },
+  //             height: { ideal: 1080 },
+  //             frameRate: { ideal: 30 },
+  //           },
+  //           audio: true,
+  //         })
+  //       : navigator.mediaDevices.getDisplayMedia({
+  //           video: true,
+  //           audio: true,
+  //         }));
+
+  //     // Set video source
+  //     if (videoRef.current) {
+  //       videoRef.current.srcObject = stream;
+  //     }
+
+  //     // Store stream reference
+  //     streamRef.current = stream;
+
+  //     // Initialize WebSocket connection
+  //     connectWebSocket();
+
+  //     // Initialize MediaRecorder with optimal settings
+  //     const mediaRecorder = new MediaRecorder(stream, {
+  //       mimeType: "video/webm;codecs=vp8,opus",
+  //       videoBitsPerSecond: 3000000, // 3 Mbps
+  //     });
+
+  //     // Handle data available event
+  //     mediaRecorder.ondataavailable = (event) => {
+  //       if (
+  //         event.data.size > 0 &&
+  //         wsRef.current?.readyState === WebSocket.OPEN
+  //       ) {
+  //         wsRef.current.send(event.data);
+  //       }
+  //     };
+
+  //     // Start recording
+  //     mediaRecorder.start(100); // Send chunks every 100ms
+  //     mediaRecorderRef.current = mediaRecorder;
+  //     setStreaming(true);
+  //     setIsLoading(false);
+
+  //     // Handle track end events
+  //     stream.getTracks().forEach((track) => {
+  //       track.onended = () => {
+  //         console.log("Track ended:", track.kind);
+  //         stopStream();
+  //       };
+  //     });
+
+  //     toast({
+  //       title: "Stream Started",
+  //       description: `Started ${type} stream successfully`,
+  //     });
+  //   } catch (err) {
+  //     console.error("Error accessing media devices:", err);
+  //     setError("Failed to access media devices");
+  //     setIsLoading(false);
+  //     toast({
+  //       title: "Stream Error",
+  //       description: "Failed to start stream",
+  //       variant: "destructive",
+  //     });
+  //   }
+  // };
 
   // Stop streaming function
   const stopStream = useCallback(() => {
@@ -241,24 +395,24 @@ const EventPage: React.FC = () => {
   }, []);
 
   // Copy share URL function
-  const copyShareUrl = async () => {
-    try {
-      await navigator.clipboard.writeText(shareUrl);
-      setCopied(true);
-      toast({
-        title: "Link Copied",
-        description: "Stream link has been copied to clipboard",
-      });
-      setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
-      console.error("Failed to copy:", err);
-      toast({
-        title: "Copy Failed",
-        description: "Failed to copy link to clipboard",
-        variant: "destructive",
-      });
-    }
-  };
+  // const copyShareUrl = async () => {
+  //   try {
+  //     await navigator.clipboard.writeText(shareUrl);
+  //     setCopied(true);
+  //     toast({
+  //       title: "Link Copied",
+  //       description: "Stream link has been copied to clipboard",
+  //     });
+  //     setTimeout(() => setCopied(false), 2000);
+  //   } catch (err) {
+  //     console.error("Failed to copy:", err);
+  //     toast({
+  //       title: "Copy Failed",
+  //       description: "Failed to copy link to clipboard",
+  //       variant: "destructive",
+  //     });
+  //   }
+  // };
 
   const uuid = () => {
     var S4 = function () {
@@ -299,158 +453,147 @@ const EventPage: React.FC = () => {
   }, [stopStream]);
 
   return (
-    <div className="container mx-auto p-4">
-      <Card className="w-full max-w-4xl mx-auto">
-        <CardContent className="p-6">
-          {/* Connection Status */}
-          <div className="flex items-center gap-2 mb-4">
-            <div
-              className={`w-2 h-2 rounded-full ${connected ? "bg-green-500" : "bg-red-500"}`}
-            />
-            <span className="text-sm text-gray-500">
-              {connected ? "Connected" : "Disconnected"}
-            </span>
-            {streaming && (
-              <div className="flex items-center ml-4">
-                <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse mr-2" />
-                <span className="text-sm text-gray-500">Live</span>
-              </div>
-            )}
+    <DragDropContext onDragEnd={handleDragEnd}>
+      <div className="flex flex-col h-screen bg-gray-900 text-white">
+        {/* Stream Status Bar */}
+        <div className="bg-gray-800 p-4 shadow-sm">
+          <div className="max-w-7xl mx-auto flex justify-between items-center">
+            <LiveIndicator {...streamStatus} />
+            <Button
+              onClick={handleGoLive}
+              variant={streamStatus.isLive ? "destructive" : "default"}
+            >
+              {streamStatus.isLive ? "End Stream" : "Go Live"}
+            </Button>
           </div>
+        </div>
 
-          {/* Error Display */}
-          {error && (
-            <Alert variant="destructive" className="mb-4">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-
-          {/* Video Preview */}
-          <div className="relative aspect-video bg-black rounded-lg overflow-hidden mb-4">
-            {isLoading && (
-              <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-                <Loader className="w-8 h-8 animate-spin text-white" />
-              </div>
-            )}
-            <video
-              ref={videoRef}
-              autoPlay
-              muted
-              playsInline
-              className="w-full h-full"
-            />
-            {!streaming && !isLoading && (
-              <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-                <p className="text-white text-lg">
-                  Start streaming to preview your video
-                </p>
-              </div>
-            )}
-          </div>
-
-          {/* Controls */}
-          <div className="space-y-4">
-            {/* Stream Control Buttons */}
-            <div className="flex items-center space-x-4">
-              <Button
-                onClick={() => startStream("camera")}
-                disabled={streaming || isLoading}
-                className="flex items-center"
-              >
-                <Camera className="mr-2 h-4 w-4" />
-                Start Camera
-              </Button>
-              <Button
-                onClick={() => startStream("screen")}
-                disabled={streaming || isLoading}
-                className="flex items-center"
-              >
-                <Monitor className="mr-2 h-4 w-4" />
-                Share Screen
-              </Button>
-              {streaming && (
-                <Button onClick={stopStream} variant="destructive">
-                  Stop Stream
-                </Button>
-              )}
-            </div>
-
-            <div className="flex items-center justify-center mt-4">
-              <Button
-                onClick={() => {
-                  changeModule("video");
-                }}
-                className="text-3xl mx-8 px-8 py-6 font-alatsi"
-              >
-                Video
-              </Button>
-              <Button
-                onClick={() => {
-                  changeModule("slides");
-                }}
-                className="text-3xl mx-8 px-8 py-6 font-alatsi"
-              >
-                Slides
-              </Button>
-              <Button
-                onClick={() => {
-                  changeModule("text");
-                }}
-                className="text-3xl mx-8 px-8 py-6 font-alatsi"
-              >
-                Text
-              </Button>
-            </div>
-
-            {/* Stream Info and Share URL */}
-            {streaming && (
-              <>
-                <div className="flex items-center space-x-4">
-                  <div className="flex items-center">
-                    <Users className="mr-2 h-4 w-4" />
-                    <span>
-                      {viewers} viewer{viewers !== 1 ? "s" : ""}
-                    </span>
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-2">
-                      <Input value={shareUrl} readOnly className="flex-1" />
-                      <Button
-                        onClick={copyShareUrl}
-                        variant="outline"
-                        className="flex items-center"
-                      >
-                        {copied ? (
-                          <CheckCheck className="h-4 w-4" />
-                        ) : (
-                          <Copy className="h-4 w-4" />
-                        )}
-                      </Button>
+        {/* Main Content */}
+        <div className="flex flex-1 overflow-hidden">
+          {/* Main Stage */}
+          <div className="flex-[3] p-6">
+            <Droppable droppableId="main-stage">
+              {(provided: any, snapshot: any) => (
+                <Card
+                  ref={provided.innerRef}
+                  {...provided.droppableProps}
+                  className={`h-full flex items-center justify-center bg-gray-800 ${
+                    snapshot.isDraggingOver ? "border-2 border-blue-400" : ""
+                  }`}
+                >
+                  {currentComponent ? (
+                    <div className="text-center p-6">
+                      <div className="mb-4">{currentComponent.icon}</div>
+                      <h2 className="text-xl font-semibold mb-4">
+                        {currentComponent.title}
+                      </h2>
+                      {currentComponent.imageUrl && (
+                        <img
+                          src={currentComponent.imageUrl}
+                          alt={currentComponent.title}
+                          className="mx-auto mb-4 rounded-lg shadow-md"
+                        />
+                      )}
+                      <p className="text-white">{currentComponent.content}</p>
                     </div>
-                  </div>
-                </div>
-
-                {/* Stream Information Panel */}
-                <div className="mt-4 p-4 border rounded-lg">
-                  <h3 className="text-lg font-semibold mb-2">
-                    Stream Information
-                  </h3>
-                  <div className="space-y-2">
-                    <p className="text-sm text-gray-500">Room ID: {roomId}</p>
-                    <p className="text-sm text-gray-500">
-                      Active Viewers: {viewers}
-                    </p>
-                    <p className="text-sm text-gray-500">
-                      Share URL: {shareUrl}
-                    </p>
-                  </div>
-                </div>
-              </>
-            )}
+                  ) : (
+                    <p className="text-gray-400">Drag a component here</p>
+                  )}
+                  {provided.placeholder}
+                </Card>
+              )}
+            </Droppable>
           </div>
-        </CardContent>
-      </Card>
-    </div>
+
+          {/* Right Sidebar: Components Panel and Interaction Component */}
+          <div className="flex-1 bg-gray-800 shadow-lg flex flex-col">
+            {/* Components Panel */}
+            <div className="p-4 border-b border-gray-700">
+              <h2 className="text-lg font-semibold mb-4">Components</h2>
+              <Droppable droppableId="components-list">
+                {(provided: any, snapshot: any) => (
+                  <ScrollArea className="h-96">
+                    <div
+                      ref={provided.innerRef}
+                      {...provided.droppableProps}
+                      className={`space-y-2 ${snapshot.isDraggingOver ? "bg-gray-700" : ""}`}
+                    >
+                      {components.map((item, index) => (
+                        <Draggable
+                          key={item.id}
+                          draggableId={item.id}
+                          index={index}
+                        >
+                          {(provided: any, snapshot: any) => (
+                            <Card
+                              ref={provided.innerRef}
+                              {...provided.draggableProps}
+                              {...provided.dragHandleProps}
+                              className={`p-4 cursor-move bg-gray-700 hover:bg-gray-600 ${
+                                snapshot.isDragging ? "shadow-lg" : ""
+                              }`}
+                            >
+                              <div className="flex items-center space-x-3">
+                                {item.icon}
+                                <div>
+                                  <h3 className="font-medium text-white">
+                                    {item.title}
+                                  </h3>
+                                  <p className="text-sm text-gray-300">
+                                    {item.type}
+                                  </p>
+                                </div>
+                              </div>
+                            </Card>
+                          )}
+                        </Draggable>
+                      ))}
+                      {provided.placeholder}
+                    </div>
+                  </ScrollArea>
+                )}
+              </Droppable>
+            </div>
+
+            {/* Interaction Component */}
+            <div className="flex-1 p-4">
+              <Select
+                onValueChange={(value: "chat" | "qa" | "poll") =>
+                  setInteractionType(value)
+                }
+              >
+                <SelectTrigger className="w-full mb-2 bg-gray-700 text-white">
+                  <SelectValue placeholder="Select interaction type" />
+                </SelectTrigger>
+                <SelectContent className="bg-gray-700 text-white">
+                  <SelectItem value="chat">
+                    <div className="flex items-center">
+                      <MessageSquare className="w-4 h-4 mr-2" />
+                      Live Chat
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="qa">
+                    <div className="flex items-center">
+                      <HelpCircle className="w-4 h-4 mr-2" />
+                      Q&A
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="poll">
+                    <div className="flex items-center">
+                      <BarChart className="w-4 h-4 mr-2" />
+                      Poll
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              <Card className="h-full overflow-y-auto bg-gray-700 text-white">
+                {renderInteractionComponent()}
+              </Card>
+            </div>
+          </div>
+        </div>
+      </div>
+    </DragDropContext>
   );
 };
 
