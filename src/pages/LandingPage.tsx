@@ -12,8 +12,8 @@ import HostLoginPage from "./host/HostLoginPage";
 import HostRegisterPage from "./host/HostRegisterPage";
 
 type JoinEventFormData = {
-  eventCode: string;
-  eventPassword: string;
+  code: string;
+  password: string;
   displayName: string;
 };
 
@@ -36,16 +36,19 @@ const LandingPage = () => {
   const TRANSITION_DURATION = 300;
 
   const joinEventMutation = useMutation<User, Error, JoinEventFormData>(
-    async (data) => {
-      const response = await fetch('/api/join-event', {
-        method: 'POST',
+    async (data: JoinEventFormData) => {
+      console.log(data);
+      const response: Response = await fetch("/api/event/join", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(data),
       });
       if (!response.ok) {
-        throw new Error('Failed to join event');
+        console.log(response.status);
+        console.log(response.body.text());
+        throw new Error("Failed to join event");
       }
       return response.json();
     },
@@ -125,12 +128,12 @@ const LandingPage = () => {
               Event Code
               <input
                 className={inputFieldFormat}
-                {...register("eventCode", {
+                {...register("code", {
                   required: "Event code is required",
                 })}
               />
-              {errors.eventCode && (
-                <span className={errorTextFormat}>{errors.eventCode.message}</span>
+              {errors.code && (
+                <span className={errorTextFormat}>{errors.code.message}</span>
               )}
             </label>
 
@@ -139,12 +142,14 @@ const LandingPage = () => {
               <input
                 className={inputFieldFormat}
                 type="password"
-                {...register("eventPassword", {
+                {...register("password", {
                   required: "Event password is required",
                 })}
               />
-              {errors.eventPassword && (
-                <span className={errorTextFormat}>{errors.eventPassword.message}</span>
+              {errors.password && (
+                <span className={errorTextFormat}>
+                  {errors.password.message}
+                </span>
               )}
             </label>
 
@@ -157,7 +162,9 @@ const LandingPage = () => {
                 })}
               />
               {errors.displayName && (
-                <span className={errorTextFormat}>{errors.displayName.message}</span>
+                <span className={errorTextFormat}>
+                  {errors.displayName.message}
+                </span>
               )}
             </label>
 
@@ -197,9 +204,11 @@ const LandingPage = () => {
         {showHostButtons ? "Back" : "Host"}
       </Button>
 
-      <div className={`flex flex-col transition-all duration-300 ${
-        optionSelected === null ? "" : "scale-90"
-      }`}>
+      <div
+        className={`flex flex-col transition-all duration-300 ${
+          optionSelected === null ? "" : "scale-90"
+        }`}
+      >
         <img
           src={logo}
           alt="EventHub Logo"
