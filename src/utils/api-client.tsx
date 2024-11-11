@@ -3,11 +3,6 @@ import { RegisterFormData } from "../pages/host/HostRegisterPage.tsx";
 import axios from "axios";
 import { User } from "@/utils/types";
 import { CreateEventFormData } from "@/pages/host/HostCreateEvent.tsx";
-import {
-  JoinEventFormData,
-  JoinEventResponseData,
-} from "@/pages/LandingPage.tsx";
-import { toast } from "@/components/shadcn/ui/use-toast.ts";
 
 const API_BASE_URL = "http://localhost:8080";
 
@@ -74,35 +69,6 @@ export const getFullAccountInfo = async (
     throw error;
   }
 };
-
-// export const update = async (formData: UpdateFormData) => {
-//   // const { user } = useAppContext();
-//   // const user = appContext.user;
-//   const response = await axios
-//     .put(
-//       `${API_BASE_URL}/account/api/update`,
-//       {
-//         id: formData.id,
-//         username: formData.username,
-//         email: formData.email,
-//         password: formData.password,
-//         confirmPassword: formData.confirmPassword,
-//       },
-//       {
-//         headers: {
-//           "Content-Type": "application/json",
-//         },
-//         withCredentials: true,
-//       }
-//     )
-//     .then((response) => {
-//       console.log(response.data);
-//     })
-//     .catch((error) => {
-//       // Error handling code remains the same
-//       throw new Error(error);
-//     });
-// };
 
 export const deleteUser = async (id: number) => {
   const response = await axios
@@ -275,20 +241,3 @@ export const getEvents = async (accountID: string) => {
   return response;
 };
 
-export const joinEvent = async (data: JoinEventFormData) => {
-  const response: Response = await fetch(
-    "http://localhost:8080/api/event/join",
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(data),
-    }
-  );
-  if (!response.ok) {
-    const errorMessage = await response.text();
-    throw new Error(errorMessage || "Failed to join event");
-  }
-  return await response.json();
-};
