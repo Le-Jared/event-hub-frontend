@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import plus from "/plus-icon.svg";
+import watchParty from "/watch-party.svg";
 import ChatInput from "./ChatInput";
 import { LoadingSpinner } from "./LoadingSpinner";
 import ChatHistory from "./ChatHistory";
@@ -62,14 +64,14 @@ const LiveChat: React.FC<LiveChatProps> = ({ roomID }) => {
         <div className="flex items-center">
           <h2 className="font-alatsi text-stone-50 text-lg ">Live Chat</h2>
         </div>
-        {/* <div className="flex order-last space-x-3 items-center">
+        <div className="flex order-last space-x-3 items-center">
           <button className="size-auto">
             <img src={plus} className="size-8"></img>
           </button>
           <button className="size-auto">
             <img src={watchParty} className="size-8"></img>
           </button>
-        </div> */}
+        </div>
       </div>
 
       {/* Loading overlay */}
@@ -93,7 +95,10 @@ const LiveChat: React.FC<LiveChatProps> = ({ roomID }) => {
           setMessageToSend={setMessageToSend}
           roomID={roomID}
         />
+        
       </div>
+
+      
     </div>
   );
 };

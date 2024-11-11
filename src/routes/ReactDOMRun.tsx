@@ -59,10 +59,6 @@ const router = createBrowserRouter([
     path: "*",
     element: <Navigate to="/404" replace />,
   },
-  {
-    path: "timothy-test",
-    element: <TestPage />,
-  },
 ]);
 
 const ReactDOMRun: React.FC = () => {
