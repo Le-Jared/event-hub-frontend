@@ -17,7 +17,8 @@ import Pong from "../components/Pong";
 import Checkers from "../components/Checkers";
 import Tetris from "../components/Tetris";
 import Game2048 from "../components/2048";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
+import { Button } from "@/components/shadcn/ui/button";
 
 type RoomDetails = {
   id: number;
@@ -33,7 +34,9 @@ type RoomDetails = {
 const WaitingRoomPage: React.FC = () => {
   const { roomId } = useParams();
   const [roomDetails, setRoomDetails] = useState<RoomDetails | null>(null);
+  const [eventStarted, setEventStarted] = useState<boolean>(false);
   const [timeLeft, setTimeLeft] = useState<string>("");
+  const navigate = useNavigate();
 
   const getEvent = async (eventCode: string): Promise<RoomDetails> => {
     const response = await fetch(
@@ -50,6 +53,10 @@ const WaitingRoomPage: React.FC = () => {
       throw new Error(errorMessage || "Failed to fetch event details");
     }
     return response.json();
+  };
+
+  const joinEvent = () => {
+    navigate(`/viewer/${roomId}`);
   };
 
   useEffect(() => {
@@ -76,6 +83,7 @@ const WaitingRoomPage: React.FC = () => {
               setTimeLeft(`${hours}h ${minutes}m ${seconds}s`);
             } else {
               setTimeLeft("Event has started!");
+              setEventStarted(true);
               clearInterval(timer);
             }
           }, 1000);
@@ -105,6 +113,11 @@ const WaitingRoomPage: React.FC = () => {
               Scheduled Start: {roomDetails.scheduledDate} at{" "}
               {roomDetails.scheduledTime}
             </p>
+          )}
+          {eventStarted && (
+            <Button className="my-4 font-semibold text-lg" onClick={joinEvent}>
+              Join Event!
+            </Button>
           )}
         </div>
 
