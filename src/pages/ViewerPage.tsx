@@ -1,440 +1,225 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Card, CardContent } from "@/components/shadcn/ui/card";
-import { Button } from "@/components/shadcn/ui/button";
 import { Alert, AlertDescription } from "@/components/shadcn/ui/alert";
-import { Slider } from "@/components/shadcn/ui/slider";
-import { Play, Pause, Volume2, VolumeX, Loader, Settings} from 'lucide-react';
-import { useToast } from "@/components/shadcn/ui/use-toast";
-import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/shadcn/ui/select";
+import { Loader } from 'lucide-react';
 
-
-const WEBSOCKET_URL = 'ws://localhost:8080/stream';
-
-// Buffer size options in minutes
-const BUFFER_OPTIONS = [
-  { label: '5 minutes', value: 5 * 60 },
-  { label: '15 minutes', value: 15 * 60 },
-  { label: '30 minutes', value: 30 * 60 },
-  { label: '1 hour', value: 60 * 60 },
-  { label: '2 hours', value: 120 * 60 }
-];
-
-interface StreamSegment {
-  timestamp: number;
-  data: ArrayBuffer;
-  duration: number;
-}
+// Constants
+const MIME_TYPE = 'video/webm; codecs="vp8,opus"';
+const MAX_BUFFER_LENGTH = 60; // Maximum buffer length in seconds
+const MIN_BUFFER_LENGTH = 0.5; // Minimum buffer length in seconds
 
 const ViewerPage: React.FC = () => {
-  const { toast } = useToast();
   const { roomId } = useParams<{ roomId: string }>();
   const [connected, setConnected] = useState(false);
-  const [error, setError] = useState<string>('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [isPlaying, setIsPlaying] = useState(true);
-  const [isMuted, setIsMuted] = useState(false);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(0);
-  const [volume, setVolume] = useState(1);
-  const [isLive, setIsLive] = useState(true);
-  const [bufferSize, setBufferSize] = useState(BUFFER_OPTIONS[1].value); // Default 15 minutes
-  const [showSettings, setShowSettings] = useState(false);
-
-  // Refs
+  const [error, setError] = useState<string | null>(null);
+  
   const videoRef = useRef<HTMLVideoElement>(null);
-  const wsRef = useRef<WebSocket>();
-  const mediaSourceRef = useRef<MediaSource>();
-  const sourceBufferRef = useRef<SourceBuffer>();
-  const streamBufferRef = useRef<StreamSegment[]>([]);
-  const lastUpdateTimeRef = useRef<number>(Date.now());
-  const totalStreamDurationRef = useRef<number>(0);
+  const mediaSourceRef = useRef<MediaSource | null>(null);
+  const sourceBufferRef = useRef<SourceBuffer | null>(null);
+  const wsRef = useRef<WebSocket | null>(null);
+  const bufferQueue = useRef<ArrayBuffer[]>([]);
+  const isProcessing = useRef<boolean>(false);
+  const hasInitSegment = useRef<boolean>(false);
 
-  // Utility functions
-  const calculateBufferMemoryUsage = useCallback(() => {
-    const totalBytes = streamBufferRef.current.reduce((acc, segment) => {
-      return acc + segment.data.byteLength;
-    }, 0);
-    return (totalBytes / (1024 * 1024)).toFixed(2); // Convert to MB
-  }, []);
-
-  const handleBufferSizeChange = (newSize: string) => {
-    const size = parseInt(newSize, 10);
-    setBufferSize(size);
-    
-    // Trim existing buffer if necessary
-    if (streamBufferRef.current.length > 0) {
-      const currentTime = Date.now();
-      streamBufferRef.current = streamBufferRef.current.filter(
-        segment => (currentTime - segment.timestamp) <= size * 1000
-      );
-      
-      toast({
-        title: "Buffer Size Updated",
-        description: `Buffer size set to ${BUFFER_OPTIONS.find(opt => opt.value === size)?.label}. Memory usage: ${calculateBufferMemoryUsage()}MB`,
-      });
-    }
-  };
-
-  const goLive = useCallback(() => {
-    if (videoRef.current && sourceBufferRef.current?.buffered.length) {
-      const endTime = sourceBufferRef.current.buffered.end(sourceBufferRef.current.buffered.length - 1);
-      videoRef.current.currentTime = endTime;
-      setIsLive(true);
-      setIsPlaying(true);
-    }
-  }, []);
-
-  const handleTimeUpdate = useCallback(() => {
-    if (videoRef.current) {
-      setCurrentTime(videoRef.current.currentTime);
-      
-      // Check if we're live
-      if (sourceBufferRef.current?.buffered.length) {
-        const endTime = sourceBufferRef.current.buffered.end(sourceBufferRef.current.buffered.length - 1);
-        const isNearEnd = Math.abs(endTime - videoRef.current.currentTime) < 1;
-        setIsLive(isNearEnd);
-      }
-    }
-  }, []);
-
-  const handlePlayPause = useCallback(() => {
-    if (videoRef.current) {
-      if (isPlaying) {
-        videoRef.current.pause();
-      } else {
-        videoRef.current.play();
-      }
-      setIsPlaying(!isPlaying);
-    }
-  }, [isPlaying]);
-
-  const handleVolumeChange = useCallback((value: number) => {
-    if (videoRef.current) {
-      videoRef.current.volume = value;
-      setVolume(value);
-      setIsMuted(value === 0);
-    }
-  }, []);
-
-  const handleMuteToggle = useCallback(() => {
-    if (videoRef.current) {
-      const newMutedState = !isMuted;
-      videoRef.current.muted = newMutedState;
-      setIsMuted(newMutedState);
-      if (newMutedState) {
-        setVolume(0);
-      } else {
-        setVolume(1);
-        videoRef.current.volume = 1;
-      }
-    }
-  }, [isMuted]);
-
-  const handleSeek = useCallback((time: number) => {
-    if (videoRef.current && sourceBufferRef.current?.buffered.length) {
-      videoRef.current.currentTime = time;
-      setIsLive(false);
-    }
-  }, []);
-
-    // MediaSource initialization
-    const initializeMediaSource = useCallback(() => {
-      const mediaSource = new MediaSource();
-      mediaSourceRef.current = mediaSource;
-      
-      if (videoRef.current) {
-        videoRef.current.src = URL.createObjectURL(mediaSource);
-      }
-  
-      return new Promise<void>((resolve, reject) => {
-        mediaSource.addEventListener('sourceopen', () => {
-          try {
-            const sourceBuffer = mediaSource.addSourceBuffer('video/webm; codecs="vp8,opus"');
-            sourceBufferRef.current = sourceBuffer;
-            
-            sourceBuffer.mode = 'sequence';
-            sourceBuffer.addEventListener('updateend', () => {
-              // Remove old segments when buffer exceeds the limit
-              if (mediaSource.duration > bufferSize) {
-                const removeEnd = mediaSource.duration - bufferSize;
-                sourceBuffer.remove(0, removeEnd);
-                
-                // Update stream buffer array
-                const currentTime = Date.now();
-                streamBufferRef.current = streamBufferRef.current.filter(
-                  segment => (currentTime - segment.timestamp) <= bufferSize * 1000
-                );
-              }
-            });
-            
-            resolve();
-          } catch (error) {
-            reject(error);
-          }
-        });
-      });
-    }, [bufferSize]);
-  
-    // WebSocket connection management
-    const connectWebSocket = useCallback(() => {
-      if (wsRef.current?.readyState === WebSocket.OPEN) {
-        return;
-      }
-  
-      setIsLoading(true);
-      const ws = new WebSocket(`${WEBSOCKET_URL}/${roomId}`);
-      wsRef.current = ws;
-  
-      ws.binaryType = 'arraybuffer';
-  
-      ws.onopen = () => {
-        setConnected(true);
-        setIsLoading(false);
-        setError('');
-        toast({
-          title: "Connected",
-          description: "Successfully connected to the stream",
-        });
-      };
-  
-      ws.onmessage = async (event) => {
-        if (!sourceBufferRef.current || sourceBufferRef.current.updating) {
-          return;
-        }
-  
-        try {
-          const data = event.data;
-          const timestamp = Date.now();
-          
-          // Calculate segment duration based on previous segment
-          const duration = (timestamp - lastUpdateTimeRef.current) / 1000;
-          lastUpdateTimeRef.current = timestamp;
-          
-          // Add segment to buffer
-          streamBufferRef.current.push({
-            timestamp,
-            data,
-            duration
-          });
-  
-          // Append to SourceBuffer
-          sourceBufferRef.current.appendBuffer(data);
-          totalStreamDurationRef.current += duration;
-          setDuration(totalStreamDurationRef.current);
-  
-          // Auto-play when we have enough data
-          if (videoRef.current && videoRef.current.paused && isPlaying) {
-            videoRef.current.play().catch(() => {
-              // Handle auto-play restriction
-              setIsPlaying(false);
-              toast({
-                title: "Playback Blocked",
-                description: "Auto-play was blocked by browser. Click play to start.",
-                variant: "destructive"
-              });
-            });
-          }
-        } catch (error) {
-          console.error('Error processing stream data:', error);
-        }
-      };
-  
-      ws.onerror = () => {
-        console.error('WebSocket error:', event);
-        setError('Connection error occurred');
-        setIsLoading(false);
-        toast({
-          title: "Connection Error",
-          description: "Failed to connect to the stream",
-          variant: "destructive"
-        });
-      };
-  
-      ws.onclose = () => {
-        setConnected(false);
-        setIsLoading(false);
-        toast({
-          title: "Disconnected",
-          description: "Connection to stream closed",
-          variant: "destructive"
-        });
-  
-        // Attempt to reconnect after 5 seconds
-        setTimeout(() => {
-          if (!wsRef.current || wsRef.current.readyState === WebSocket.CLOSED) {
-            connectWebSocket();
-          }
-        }, 5000);
-      };
-    }, [roomId, isPlaying]);
-
-      // Effect hooks
-  useEffect(() => {
-    const initializeStream = async () => {
+  const clearBuffers = useCallback(() => {
+    if (sourceBufferRef.current && !sourceBufferRef.current.updating) {
       try {
-        await initializeMediaSource();
-        connectWebSocket();
-      } catch (error) {
-        console.error('Failed to initialize stream:', error);
-        setError('Failed to initialize stream');
+        const buffered = sourceBufferRef.current.buffered;
+        if (buffered.length > 0) {
+          sourceBufferRef.current.remove(0, buffered.end(buffered.length - 1));
+        }
+      } catch (e) {
+        console.warn('Clear buffer error:', e);
+      }
+    }
+    bufferQueue.current = [];
+    isProcessing.current = false;
+    hasInitSegment.current = false;
+  }, []);
+
+  const initializeMediaSource = useCallback(() => {
+    if (!videoRef.current) return;
+
+    try {
+      const ms = new MediaSource();
+      mediaSourceRef.current = ms;
+      videoRef.current.src = URL.createObjectURL(ms);
+
+      ms.addEventListener('sourceopen', () => {
+        try {
+          if (!sourceBufferRef.current && ms.readyState === 'open') {
+            sourceBufferRef.current = ms.addSourceBuffer(MIME_TYPE);
+            sourceBufferRef.current.mode = 'segments';
+            
+            sourceBufferRef.current.addEventListener('updateend', () => {
+              isProcessing.current = false;
+              processNextChunk();
+            });
+
+            sourceBufferRef.current.addEventListener('error', () => {
+              clearBuffers();
+              initializeMediaSource();
+            });
+          }
+        } catch (e) {
+          console.error('Source buffer creation error:', e);
+          setError('Failed to initialize video player. Please refresh.');
+        }
+      });
+
+    } catch (e) {
+      console.error('MediaSource initialization error:', e);
+      setError('Your browser may not support this video format.');
+    }
+  }, [clearBuffers]);
+
+  const processNextChunk = useCallback(() => {
+    if (!sourceBufferRef.current || isProcessing.current || bufferQueue.current.length === 0) {
+      return;
+    }
+
+    try {
+      const sourceBuffer = sourceBufferRef.current;
+      
+      if (sourceBuffer && sourceBuffer.buffered.length > 0) {
+        const currentTime = videoRef.current?.currentTime || 0;
+        const bufferEnd = sourceBuffer.buffered.end(sourceBuffer.buffered.length - 1);
+        
+        if (bufferEnd - currentTime > MAX_BUFFER_LENGTH) {
+          const removeEnd = currentTime - MIN_BUFFER_LENGTH;
+          if (removeEnd > sourceBuffer.buffered.start(0)) {
+            sourceBuffer.remove(sourceBuffer.buffered.start(0), removeEnd);
+            return;
+          }
+        }
+      }
+
+      if (!sourceBuffer.updating) {
+        const chunk = bufferQueue.current.shift();
+        if (chunk) {
+          isProcessing.current = true;
+          sourceBuffer.appendBuffer(chunk);
+          
+          if (videoRef.current?.paused && sourceBuffer.buffered.length > 0) {
+            videoRef.current.play().catch(console.error);
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Process chunk error:', e);
+      if (e instanceof DOMException && e.name === 'QuotaExceededError') {
+        clearBuffers();
+      }
+    }
+  }, [clearBuffers]);
+
+  const handleVideoChunk = useCallback((chunk: ArrayBuffer) => {
+    if (!hasInitSegment.current) {
+      hasInitSegment.current = true;
+      bufferQueue.current = [chunk];
+    } else {
+      bufferQueue.current.push(chunk);
+    }
+
+    if (!isProcessing.current) {
+      processNextChunk();
+    }
+  }, [processNextChunk]);
+
+  const setupWebSocket = useCallback(() => {
+    if (!roomId) return;
+
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const ws = new WebSocket(`${protocol}//${window.location.hostname}:8080/stream/${roomId}?type=viewer`);
+    wsRef.current = ws;
+    ws.binaryType = 'arraybuffer';
+
+    ws.onopen = () => {
+      setConnected(true);
+      setError(null);
+      initializeMediaSource();
+    };
+
+    ws.onmessage = (event) => {
+      if (event.data instanceof ArrayBuffer) {
+        handleVideoChunk(event.data);
       }
     };
 
-    initializeStream();
+    ws.onerror = () => {
+      setConnected(false);
+      setError('Connection error occurred');
+    };
+
+    ws.onclose = () => {
+      setConnected(false);
+      clearBuffers();
+      setTimeout(() => setupWebSocket(), 5000);
+    };
 
     return () => {
-      // Cleanup on unmount
-      if (wsRef.current) {
-        wsRef.current.close();
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.close();
       }
-      if (mediaSourceRef.current && mediaSourceRef.current.readyState === 'open') {
-        mediaSourceRef.current.endOfStream();
-      }
+    };
+  }, [roomId, handleVideoChunk, initializeMediaSource, clearBuffers]);
+
+  useEffect(() => {
+    const cleanup = setupWebSocket();
+    return () => {
+      cleanup?.();
       if (videoRef.current) {
         videoRef.current.src = '';
       }
+      if (mediaSourceRef.current) {
+        URL.revokeObjectURL(videoRef.current?.src || '');
+      }
+      clearBuffers();
     };
-  }, [initializeMediaSource, connectWebSocket]);
+  }, [setupWebSocket, clearBuffers]);
 
-  useEffect(() => {
-    const video = videoRef.current;
-    if (video) {
-      video.addEventListener('timeupdate', handleTimeUpdate);
-      return () => video.removeEventListener('timeupdate', handleTimeUpdate);
-    }
-  }, [handleTimeUpdate]);
-
-  // Render component
   return (
-    <div className="container mx-auto p-4">
-      <Card className="w-full max-w-4xl mx-auto">
-        <CardContent className="p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <div className={`w-2 h-2 rounded-full ${connected ? 'bg-green-500' : 'bg-red-500'}`} />
-            <span className="text-sm text-gray-500">
-              {connected ? 'Connected' : 'Disconnected'}
-            </span>
-          </div>
-
-          {error && (
-            <Alert variant="destructive" className="mb-4">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
+    <Card className="w-full max-w-3xl mx-auto mt-8">
+      <CardContent className="p-6">
+        <h1 className="text-2xl font-bold mb-4">Live Stream Viewer</h1>
+        {error && (
+          <Alert variant="destructive" className="mb-4">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+        <div className="relative aspect-video bg-gray-200 rounded-lg overflow-hidden">
+          {!connected && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <Loader className="w-8 h-8 animate-spin" />
+            </div>
           )}
-          
-          <div className="relative aspect-video bg-black rounded-lg overflow-hidden mb-4">
-            {isLoading && (
-              <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-                <Loader className="w-8 h-8 animate-spin text-white" />
-              </div>
-            )}
-            <video
-              ref={videoRef}
-              className="w-full h-full"
-              playsInline
-            />
-          </div>
-
-          <div className="space-y-4">
-            {/* Playback controls */}
-            <div className="flex items-center space-x-4">
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={handlePlayPause}
-              >
-                {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-              </Button>
-
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={handleMuteToggle}
-              >
-                {isMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
-              </Button>
-
-              <div className="flex-1">
-                <Slider
-                  value={[volume * 100]}
-                  min={0}
-                  max={100}
-                  step={1}
-                  onValueChange={(value) => handleVolumeChange(value[0] / 100)}
-                  className="w-32"
-                />
-              </div>
-
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowSettings(!showSettings)}
-              >
-                <Settings className="h-4 w-4 mr-2" />
-                Settings
-              </Button>
-
-              {!isLive && (
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={goLive}
-                >
-                  Go Live
-                </Button>
-              )}
-            </div>
-
-            {/* Timeline slider */}
-            <div className="flex items-center space-x-2">
-              <span className="text-sm">
-                {new Date(currentTime * 1000).toISOString().substr(11, 8)}
-              </span>
-              <Slider
-                value={[currentTime]}
-                min={0}
-                max={duration}
-                step={0.1}
-                onValueChange={(value) => handleSeek(value[0])}
-                className="flex-1"
-              />
-              <span className="text-sm">
-                {new Date(duration * 1000).toISOString().substr(11, 8)}
-              </span>
-            </div>
-
-            {/* Settings panel */}
-            {showSettings && (
-              <div className="mt-4 p-4 border rounded-lg">
-                <h3 className="text-lg font-semibold mb-2">Buffer Settings</h3>
-                <div className="flex items-center space-x-4">
-                  <Select
-                    value={bufferSize.toString()}
-                    onValueChange={handleBufferSizeChange}
-                  >
-                    <SelectTrigger className="w-48">
-                      <SelectValue placeholder="Select buffer size" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {BUFFER_OPTIONS.map((option) => (
-                        <SelectItem key={option.value} value={option.value.toString()}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <span className="text-sm text-gray-500">
-                    Memory usage: {calculateBufferMemoryUsage()}MB
-                  </span>
-                </div>
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+          <video
+            ref={videoRef}
+            autoPlay
+            playsInline
+            muted
+            className="w-full h-full"
+            onError={() => {
+              setError('Video playback error. Attempting to reconnect...');
+              clearBuffers();
+              initializeMediaSource();
+            }}
+          />
+        </div>
+      </CardContent>
+    </Card>
   );
 };
 
 export default ViewerPage;
+
+
+
+
+
+
+
+
+
+

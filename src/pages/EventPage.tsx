@@ -1,262 +1,268 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { useParams } from 'react-router-dom';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Card, CardContent } from "@/components/shadcn/ui/card";
 import { Button } from "@/components/shadcn/ui/button";
-import { Alert, AlertDescription } from "@/components/shadcn/ui/alert";
 import { Input } from "@/components/shadcn/ui/input";
-import { Camera, Monitor, Users, Copy, CheckCheck, Loader } from 'lucide-react';
+import { Alert, AlertDescription } from "@/components/shadcn/ui/alert";
+import { Camera, CheckCheck, Copy, Loader, Monitor, Play, StopCircle, Users } from 'lucide-react';
 import { useToast } from "@/components/shadcn/ui/use-toast";
-
-const WEBSOCKET_URL = 'ws://localhost:8080/stream';
-
-interface WebSocketMessage {
-  type: 'viewer_count' | 'viewer_joined' | 'error';
-  count?: number;
-  message?: string;
-}
+import { useParams } from 'react-router-dom';
 
 const EventPage: React.FC = () => {
-  const { toast } = useToast();
   const { roomId } = useParams<{ roomId: string }>();
+  const { toast } = useToast();
   const [connected, setConnected] = useState(false);
-  const [error, setError] = useState<string>('');
-  const [isLoading, setIsLoading] = useState(false);
   const [streaming, setStreaming] = useState(false);
+  const [mediaReady, setMediaReady] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [activeMediaType, setActiveMediaType] = useState<'camera' | 'screen' | null>(null);
   const [viewers, setViewers] = useState(0);
-  const [shareUrl, setShareUrl] = useState('');
   const [copied, setCopied] = useState(false);
-
-  // Refs
+  
   const videoRef = useRef<HTMLVideoElement>(null);
-  const wsRef = useRef<WebSocket>();
-  const mediaRecorderRef = useRef<MediaRecorder>();
-  const streamRef = useRef<MediaStream>();
+  const mediaStreamRef = useRef<MediaStream | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const wsRef = useRef<WebSocket | null>(null);
+  const shareUrl = `${window.location.origin}/viewer/${roomId}`;
 
-  // Initialize share URL when component mounts or roomId changes
-  useEffect(() => {
-    const baseUrl = window.location.origin;
-    setShareUrl(`${baseUrl}/viewer/${roomId}`);
+  const setupWebSocket = useCallback(() => {
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${protocol}//${window.location.hostname}:8080/stream/${roomId}?type=broadcaster`;
+    
+    wsRef.current = new WebSocket(wsUrl);
 
-    return () => {
-      stopStream();
-    };
-  }, [roomId]);
-
-  // WebSocket connection management
-  const connectWebSocket = useCallback(() => {
-    if (wsRef.current?.readyState === WebSocket.OPEN) {
-      return;
-    }
-
-    setIsLoading(true);
-    const ws = new WebSocket(`${WEBSOCKET_URL}/${roomId}?type=broadcaster`);
-    wsRef.current = ws;
-
-    ws.onopen = () => {
+    wsRef.current.onopen = () => {
       setConnected(true);
-      setIsLoading(false);
-      setError('');
+      setError(null);
+      console.log('WebSocket connection established');
       toast({
         title: "Connected",
-        description: "Successfully connected to the stream",
+        description: "Successfully connected to the streaming server",
       });
     };
 
-    ws.onmessage = (event) => {
-      try {
-        const data: WebSocketMessage = JSON.parse(event.data);
-        switch (data.type) {
-          case 'viewer_count':
-            setViewers(data.count || 0);
-            break;
-          case 'viewer_joined':
-            toast({
-              title: "Viewer Joined",
-              description: "A new viewer has joined your stream.",
-            });
-            break;
-          case 'error':
-            setError(data.message || 'An error occurred');
-            break;
-        }
-      } catch (err) {
-        console.error('Error parsing WebSocket message:', err);
+    wsRef.current.onclose = (event) => {
+      setConnected(false);
+      if (event.wasClean) {
+        console.log(`WebSocket closed cleanly, code=${event.code}, reason=${event.reason}`);
+      } else {
+        setError('WebSocket connection lost');
+        console.error('WebSocket connection died');
+        toast({
+          title: "Connection Lost",
+          description: "WebSocket connection was lost. Please try reconnecting.",
+          variant: "destructive"
+        });
       }
     };
 
-    ws.onerror = () => {
-      console.error('WebSocket error:', event);
-      setError('Connection error occurred');
-      setIsLoading(false);
-      setConnected(false);
+    wsRef.current.onerror = (error) => {
+      console.error('WebSocket error:', error);
+      setError('WebSocket connection failed');
       toast({
         title: "Connection Error",
-        description: "Failed to connect to the stream",
+        description: "Failed to connect to the streaming server.",
         variant: "destructive"
       });
     };
 
-    ws.onclose = () => {
-      setConnected(false);
-      setIsLoading(false);
-      setStreaming(false);
-      toast({
-        title: "Disconnected",
-        description: "Connection to stream closed",
-        variant: "destructive"
-      });
-
-      // Attempt to reconnect after 5 seconds if we were streaming
-      if (streaming) {
-        setTimeout(() => {
-          if (!wsRef.current || wsRef.current.readyState === WebSocket.CLOSED) {
-            connectWebSocket();
-          }
-        }, 5000);
+    wsRef.current.onmessage = (event) => {
+      try {
+        const message = JSON.parse(event.data);
+        handleWebSocketMessage(message);
+      } catch (error) {
+        console.error('Error parsing WebSocket message:', error);
       }
     };
-  }, [roomId, streaming]);
+  }, [roomId, toast]);
 
-  // Start streaming function
-  const startStream = async (type: 'camera' | 'screen') => {
+  const handleWebSocketMessage = (message: any) => {
+    switch (message.type) {
+      case 'connection_success':
+        console.log('Successfully connected as', message.role);
+        break;
+      case 'viewer_count':
+        setViewers(message.count);
+        break;
+      case 'heartbeat':
+        wsRef.current?.send(JSON.stringify({ type: 'heartbeat_response' }));
+        break;
+      case 'broadcast_ended':
+        stopStream();
+        break;
+    }
+  };
+
+  const initializeMedia = async (type: 'camera' | 'screen') => {
     try {
       setIsLoading(true);
-      
-      // Get media stream based on type
-      const stream = await (type === 'camera' 
-        ? navigator.mediaDevices.getUserMedia({ 
-            video: { 
-              width: { ideal: 1920 },
-              height: { ideal: 1080 },
-              frameRate: { ideal: 30 }
-            }, 
-            audio: true 
-          })
-        : navigator.mediaDevices.getDisplayMedia({ 
-            video: true, 
-            audio: true 
-          })
-      );
+      setError(null);
 
-      // Set video source
+      if (mediaStreamRef.current) {
+        mediaStreamRef.current.getTracks().forEach(track => track.stop());
+      }
+
+      let stream;
+      if (type === 'camera') {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: true,
+          audio: true
+        });
+      } else {
+        stream = await navigator.mediaDevices.getDisplayMedia({
+          video: true,
+          audio: true
+        });
+      }
+
+      mediaStreamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
       }
 
-      // Store stream reference
-      streamRef.current = stream;
-      
-      // Initialize WebSocket connection
-      connectWebSocket();
-
-      // Initialize MediaRecorder with optimal settings
-      const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: 'video/webm;codecs=vp8,opus',
-        videoBitsPerSecond: 3000000, // 3 Mbps
-      });
-
-      // Handle data available event
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0 && wsRef.current?.readyState === WebSocket.OPEN) {
-          wsRef.current.send(event.data);
-        }
-      };
-
-      // Start recording
-      mediaRecorder.start(100); // Send chunks every 100ms
-      mediaRecorderRef.current = mediaRecorder;
-      setStreaming(true);
-      setIsLoading(false);
-
-      // Handle track end events
-      stream.getTracks().forEach(track => {
-        track.onended = () => {
-          console.log('Track ended:', track.kind);
-          stopStream();
-        };
-      });
-
-      toast({
-        title: "Stream Started",
-        description: `Started ${type} stream successfully`,
-      });
-
+      setMediaReady(true);
+      setActiveMediaType(type);
+      setupWebSocket();
     } catch (err) {
       console.error('Error accessing media devices:', err);
       setError('Failed to access media devices');
-      setIsLoading(false);
       toast({
-        title: "Stream Error",
-        description: "Failed to start stream",
-        variant: "destructive",
+        title: "Media Access Error",
+        description: `Failed to access ${type}. Please check your permissions.`,
+        variant: "destructive"
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  // Stop streaming function
-  const stopStream = useCallback(() => {
-    // Stop MediaRecorder if active
+  const startStreaming = async () => {
+    if (!mediaStreamRef.current || !wsRef.current) {
+      setError('No media stream available');
+      return;
+    }
+  
+    try {
+      // Log the current video tracks and their settings
+      mediaStreamRef.current.getVideoTracks().forEach(track => {
+        console.log('Video Track Settings:', track.getSettings());
+        console.log('Video Track Constraints:', track.getConstraints());
+      });
+  
+      // Log the current audio tracks and their settings
+      mediaStreamRef.current.getAudioTracks().forEach(track => {
+        console.log('Audio Track Settings:', track.getSettings());
+        console.log('Audio Track Constraints:', track.getConstraints());
+      });
+  
+      const options = {
+        mimeType: 'video/webm; codecs="vp8,opus"',
+        videoBitsPerSecond: 1000000,
+        audioBitsPerSecond: 128000,
+      };
+  
+      console.log('MediaRecorder Options:', options);
+  
+      const mediaRecorder = new MediaRecorder(mediaStreamRef.current, options);
+      mediaRecorderRef.current = mediaRecorder;
+  
+      // Send initialization message
+      wsRef.current.send(JSON.stringify({ type: 'stream_init' }));
+  
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0 && wsRef.current?.readyState === WebSocket.OPEN) {
+          // Log the chunk size and timestamp
+          console.log('Media Chunk Size:', event.data.size, 'bytes');
+          console.log('Current Video Bitrate:', mediaRecorder.videoBitsPerSecond);
+          console.log('Current Audio Bitrate:', mediaRecorder.audioBitsPerSecond);
+          
+          event.data.arrayBuffer().then(buffer => {
+            console.log('Sending buffer size:', buffer.byteLength, 'bytes');
+            wsRef.current?.send(buffer);
+          });
+        }
+      };
+  
+      // Add event listeners for MediaRecorder states
+      mediaRecorder.onstart = () => {
+        console.log('MediaRecorder started');
+        console.log('Initial Video Bitrate:', mediaRecorder.videoBitsPerSecond);
+        console.log('Initial Audio Bitrate:', mediaRecorder.audioBitsPerSecond);
+      };
+  
+      mediaRecorder.onpause = () => console.log('MediaRecorder paused');
+      mediaRecorder.onresume = () => console.log('MediaRecorder resumed');
+      mediaRecorder.onstop = () => console.log('MediaRecorder stopped');
+      mediaRecorder.onerror = (error) => console.error('MediaRecorder error:', error);
+  
+      mediaRecorder.start(1000); // Send chunks every second
+      setStreaming(true);
+    } catch (error) {
+      console.error('Error starting stream:', error);
+      setError(`Failed to start streaming: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  };  
+
+  const stopStream = () => {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
       mediaRecorderRef.current.stop();
-    }
-
-    // Stop all tracks and clear video source
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
-      if (videoRef.current) {
-        videoRef.current.srcObject = null;
+      if (wsRef.current?.readyState === WebSocket.OPEN) {
+        wsRef.current.send(JSON.stringify({ type: 'stream_ended' }));
       }
     }
-
-    // Close WebSocket connection
-    if (wsRef.current) {
-      wsRef.current.close();
-    }
-
-    // Reset state
     setStreaming(false);
-    setConnected(false);
-    setViewers(0);
-    setError('');
-
     toast({
       title: "Stream Ended",
-      description: "Your stream has been stopped",
+      description: "Your stream has been stopped.",
     });
-  }, []);
+  };
 
-  // Copy share URL function
+  const stopMedia = () => {
+    if (mediaStreamRef.current) {
+      mediaStreamRef.current.getTracks().forEach(track => track.stop());
+    }
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+    setMediaReady(false);
+    setActiveMediaType(null);
+  };
+
   const copyShareUrl = async () => {
     try {
       await navigator.clipboard.writeText(shareUrl);
       setCopied(true);
-      toast({
-        title: "Link Copied",
-        description: "Stream link has been copied to clipboard",
-      });
       setTimeout(() => setCopied(false), 2000);
+      toast({
+        title: "URL Copied",
+        description: "Share URL has been copied to clipboard.",
+      });
     } catch (err) {
-      console.error('Failed to copy:', err);
+      console.error('Failed to copy URL:', err);
       toast({
         title: "Copy Failed",
-        description: "Failed to copy link to clipboard",
-        variant: "destructive",
+        description: "Failed to copy URL. Please try again.",
+        variant: "destructive"
       });
     }
   };
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
-      stopStream();
+      if (wsRef.current) {
+        wsRef.current.close();
+      }
+      if (mediaStreamRef.current) {
+        mediaStreamRef.current.getTracks().forEach(track => track.stop());
+      }
     };
-  }, [stopStream]);
+  }, []);
 
   return (
     <div className="container mx-auto p-4">
       <Card className="w-full max-w-4xl mx-auto">
         <CardContent className="p-6">
-          {/* Connection Status */}
+          {/* Status Indicators */}
           <div className="flex items-center gap-2 mb-4">
             <div className={`w-2 h-2 rounded-full ${connected ? 'bg-green-500' : 'bg-red-500'}`} />
             <span className="text-sm text-gray-500">
@@ -291,10 +297,10 @@ const EventPage: React.FC = () => {
               playsInline
               className="w-full h-full"
             />
-            {!streaming && !isLoading && (
+            {!mediaReady && !isLoading && (
               <div className="absolute inset-0 flex items-center justify-center bg-black/50">
                 <p className="text-white text-lg">
-                  Start streaming to preview your video
+                  Initialize camera or screen to preview
                 </p>
               </div>
             )}
@@ -302,80 +308,90 @@ const EventPage: React.FC = () => {
 
           {/* Controls */}
           <div className="space-y-4">
-            {/* Stream Control Buttons */}
             <div className="flex items-center space-x-4">
+              {/* Camera Button */}
               <Button
-                onClick={() => startStream('camera')}
-                disabled={streaming || isLoading}
+                onClick={() => initializeMedia('camera')}
+                disabled={isLoading || (mediaReady && activeMediaType === 'camera')}
                 className="flex items-center"
               >
                 <Camera className="mr-2 h-4 w-4" />
-                Start Camera
+                {activeMediaType === 'camera' ? 'Camera Active' : 'Start Camera'}
               </Button>
+
+              {/* Screen Share Button */}
               <Button
-                onClick={() => startStream('screen')}
-                disabled={streaming || isLoading}
+                onClick={() => initializeMedia('screen')}
+                disabled={isLoading || (mediaReady && activeMediaType === 'screen')}
                 className="flex items-center"
               >
                 <Monitor className="mr-2 h-4 w-4" />
-                Share Screen
+                {activeMediaType === 'screen' ? 'Screen Active' : 'Share Screen'}
               </Button>
+
+              {/* Go Live Button */}
+              {mediaReady && !streaming && (
+                <Button
+                  onClick={startStreaming}
+                  className="flex items-center"
+                >
+                  <Play className="mr-2 h-4 w-4" />
+                  Go Live
+                </Button>
+              )}
+
+              {/* Stop Stream Button */}
               {streaming && (
                 <Button
                   onClick={stopStream}
                   variant="destructive"
+                  className="flex items-center"
                 >
+                  <StopCircle className="mr-2 h-4 w-4" />
                   Stop Stream
+                </Button>
+              )}
+
+              {/* Stop Preview Button */}
+              {mediaReady && (
+                <Button
+                  onClick={stopMedia}
+                  variant="outline"
+                  className="flex items-center"
+                >
+                  Stop Preview
                 </Button>
               )}
             </div>
 
-            {/* Stream Info and Share URL */}
+            {/* Viewer Count and Share URL */}
             {streaming && (
-              <>
-                <div className="flex items-center space-x-4">
-                  <div className="flex items-center">
-                    <Users className="mr-2 h-4 w-4" />
-                    <span>{viewers} viewer{viewers !== 1 ? 's' : ''}</span>
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-2">
-                      <Input
-                        value={shareUrl}
-                        readOnly
-                        className="flex-1"
-                      />
-                      <Button
-                        onClick={copyShareUrl}
-                        variant="outline"
-                        className="flex items-center"
-                      >
-                        {copied ? (
-                          <CheckCheck className="h-4 w-4" />
-                        ) : (
-                          <Copy className="h-4 w-4" />
-                        )}
-                      </Button>
-                    </div>
+              <div className="flex items-center space-x-4">
+                <div className="flex items-center">
+                  <Users className="mr-2 h-4 w-4" />
+                  <span>{viewers} viewer{viewers !== 1 ? 's' : ''}</span>
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center space-x-2">
+                    <Input
+                      value={shareUrl}
+                      readOnly
+                      className="flex-1"
+                    />
+                    <Button
+                      onClick={copyShareUrl}
+                      variant="outline"
+                      className="flex items-center"
+                    >
+                      {copied ? (
+                        <CheckCheck className="h-4 w-4" />
+                      ) : (
+                        <Copy className="h-4 w-4" />
+                      )}
+                    </Button>
                   </div>
                 </div>
-
-                {/* Stream Information Panel */}
-                <div className="mt-4 p-4 border rounded-lg">
-                  <h3 className="text-lg font-semibold mb-2">Stream Information</h3>
-                  <div className="space-y-2">
-                    <p className="text-sm text-gray-500">
-                      Room ID: {roomId}
-                    </p>
-                    <p className="text-sm text-gray-500">
-                      Active Viewers: {viewers}
-                    </p>
-                    <p className="text-sm text-gray-500">
-                      Share URL: {shareUrl}
-                    </p>
-                  </div>
-                </div>
-              </>
+              </div>
             )}
           </div>
         </CardContent>
