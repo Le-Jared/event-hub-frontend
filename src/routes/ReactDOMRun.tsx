@@ -40,7 +40,7 @@ const router = createBrowserRouter([
         element: <EventPage />,
       },
       {
-        path: "waiting",
+        path: "waiting/:roomId",
         element: <WaitingPage />,
       },
       {
@@ -53,15 +53,11 @@ const router = createBrowserRouter([
       },
       {
         path: "host/create",
-        element: (
-            <HostCreateEvent/>
-        ),
+        element: <HostCreateEvent />,
       },
       {
         path: "host/manage",
-        element: (
-            <HostManageEvent/>
-        ),
+        element: <HostManageEvent />,
       },
     ],
   },

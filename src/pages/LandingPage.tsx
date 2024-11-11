@@ -37,29 +37,31 @@ const LandingPage = () => {
 
   const joinEventMutation = useMutation<User, Error, JoinEventFormData>(
     async (data: JoinEventFormData) => {
-      console.log(data);
-      const response: Response = await fetch("/api/event/join", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
-      });
+      const response: Response = await fetch(
+        "http://localhost:8080/api/event/join",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(data),
+        }
+      );
       if (!response.ok) {
-        console.log(response.status);
-        console.log(response.body.text());
-        throw new Error("Failed to join event");
+        const errorMessage = await response.text();
+        throw new Error(errorMessage || "Failed to join event");
       }
-      return response.json();
+      return await response.json();
     },
     {
-      onSuccess: () => {
+      onSuccess: (data) => {
+        const { roomId: code } = data;
         setIsLoading(false);
         toast({
           title: "Success",
           description: "Joined event successfully!",
         });
-        navigate("/stream");
+        navigate(`/waiting/${code}`);
       },
       onError: (error: Error) => {
         setIsLoading(false);
