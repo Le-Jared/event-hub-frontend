@@ -9,12 +9,12 @@ import { ProtectedRoute } from "./ProtectedRoute";
 import LandingPage from "@/pages/LandingPage";
 import NotFoundPage from "@/pages/NotFoundPage";
 import WaitingPage from "@/pages/WaitingRoomPage";
-import ViewerPage from "@/pages/ViewerPage";
 import EventPage from "@/pages/EventPage";
 import HostHomePage from "@/pages/host/HostHomePage";
 import SplineLayout from "../routes/SplineLayout";
 import HostCreateEvent from "@/pages/host/HostCreateEvent";
 import HostManageEvent from "@/pages/host/HostManageEvent";
+import ViewerPage from "@/pages/ViewerPage";
 
 const router = createBrowserRouter([
   {

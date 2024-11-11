@@ -30,8 +30,9 @@ const LandingPage = () => {
   const [transitioning, setTransitioning] = useState(false);
   const [showHostButtons, setShowHostButtons] = useState(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+
   const navigate = useNavigate();
-  useAppContext();
+  const { setUser } = useAppContext();
 
   const {
     register,
@@ -131,6 +132,9 @@ const LandingPage = () => {
 
     const onFormSubmit = handleSubmit((data) => {
       setIsLoading(true);
+      setUser({
+        username: data.displayName,
+      });
       joinEventMutation.mutate(data);
     });
 

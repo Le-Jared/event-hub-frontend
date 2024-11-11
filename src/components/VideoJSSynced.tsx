@@ -12,7 +12,6 @@ interface IVideoPlayerProps {
   options: videojs.PlayerOptions;
   roomID: string;
   isHost: boolean;
-  setRoomID: (roomID: string) => void;
   blockDisposePlayer?: boolean;
 }
 
@@ -41,15 +40,13 @@ const VideoJSSynced: React.FC<IVideoPlayerProps> = ({
   options,
   roomID,
   isHost,
-  setRoomID,
-  blockDisposePlayer
+  blockDisposePlayer,
 }) => {
   const videoNode = React.useRef<HTMLVideoElement>(null);
   const playerRef = React.useRef<any>();
   let player: any;
   let isReceived: boolean = false;
   const sender = Date.now().toString();
-
 
   // this stomp client will later be accessed by the
   //const [stompClient, setStompClient] = useState<CompatClient | null>(null);
@@ -144,17 +141,16 @@ const VideoJSSynced: React.FC<IVideoPlayerProps> = ({
   // Create a web socket connection with the server for video player synchronization
   React.useEffect(() => {
     const userToken = localStorage.getItem("watchparty-token");
-    
+
     let token = userToken?.substring(1, userToken.length - 1);
-    const socket = new SockJS(`http://localhost:8080/video-sync?token=${token}&roomID=${roomID}`);
+    const socket = new SockJS(
+      `http://localhost:8080/video-sync?token=${token}&roomID=${roomID}`
+    );
     const client = Stomp.over(socket);
 
     // console.log(stompClient);
-    
 
-    client.connect(
-      { Authorization: `Bearer ${userToken}` }, 
-      () => {
+    client.connect({ Authorization: `Bearer ${userToken}` }, () => {
       // subscribe to room id 1234 for now. will need to modify this based on watchparty session eventually
       const topic = `/topic/video/${roomID}`;
       client.subscribe(topic, (videoSyncAction) => {
@@ -223,7 +219,10 @@ const VideoJSSynced: React.FC<IVideoPlayerProps> = ({
 
   return (
     <div className=" w-full ">
-      <video ref={videoNode} className="video-js vjs-big-play-centered min-h-96" />
+      <video
+        ref={videoNode}
+        className="video-js vjs-big-play-centered min-h-96"
+      />
     </div>
   );
 };
