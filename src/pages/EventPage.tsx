@@ -1,30 +1,41 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { useParams } from 'react-router-dom';
+import React, { useEffect, useRef, useState, useCallback } from "react";
+import { useParams } from "react-router-dom";
 import { Card, CardContent } from "@/components/shadcn/ui/card";
 import { Button } from "@/components/shadcn/ui/button";
 import { Alert, AlertDescription } from "@/components/shadcn/ui/alert";
 import { Input } from "@/components/shadcn/ui/input";
-import { Camera, Monitor, Users, Copy, CheckCheck, Loader } from 'lucide-react';
+import { Camera, Monitor, Users, Copy, CheckCheck, Loader } from "lucide-react";
 import { useToast } from "@/components/shadcn/ui/use-toast";
+import { useAppContext } from "@/contexts/AppContext";
+import { ModuleConnection, sendModuleAction } from "@/utils/messaging-client";
 
-const WEBSOCKET_URL = 'ws://localhost:8080/stream';
+const WEBSOCKET_URL = "ws://localhost:8080/stream";
 
 interface WebSocketMessage {
-  type: 'viewer_count' | 'viewer_joined' | 'error';
+  type: "viewer_count" | "viewer_joined" | "error";
   count?: number;
   message?: string;
 }
+
+export type ModuleAction = {
+  TYPE: string;
+  SESSION_ID: string | undefined;
+  SENDER: string | undefined;
+  ID: string;
+};
 
 const EventPage: React.FC = () => {
   const { toast } = useToast();
   const { roomId } = useParams<{ roomId: string }>();
   const [connected, setConnected] = useState(false);
-  const [error, setError] = useState<string>('');
+  const [error, setError] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
   const [streaming, setStreaming] = useState(false);
   const [viewers, setViewers] = useState(0);
-  const [shareUrl, setShareUrl] = useState('');
+  const [shareUrl, setShareUrl] = useState("");
   const [copied, setCopied] = useState(false);
+
+  const { user } = useAppContext();
 
   // Refs
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -55,7 +66,7 @@ const EventPage: React.FC = () => {
     ws.onopen = () => {
       setConnected(true);
       setIsLoading(false);
-      setError('');
+      setError("");
       toast({
         title: "Connected",
         description: "Successfully connected to the stream",
@@ -66,33 +77,33 @@ const EventPage: React.FC = () => {
       try {
         const data: WebSocketMessage = JSON.parse(event.data);
         switch (data.type) {
-          case 'viewer_count':
+          case "viewer_count":
             setViewers(data.count || 0);
             break;
-          case 'viewer_joined':
+          case "viewer_joined":
             toast({
               title: "Viewer Joined",
               description: "A new viewer has joined your stream.",
             });
             break;
-          case 'error':
-            setError(data.message || 'An error occurred');
+          case "error":
+            setError(data.message || "An error occurred");
             break;
         }
       } catch (err) {
-        console.error('Error parsing WebSocket message:', err);
+        console.error("Error parsing WebSocket message:", err);
       }
     };
 
     ws.onerror = () => {
-      console.error('WebSocket error:', event);
-      setError('Connection error occurred');
+      console.error("WebSocket error:", event);
+      setError("Connection error occurred");
       setIsLoading(false);
       setConnected(false);
       toast({
         title: "Connection Error",
         description: "Failed to connect to the stream",
-        variant: "destructive"
+        variant: "destructive",
       });
     };
 
@@ -103,7 +114,7 @@ const EventPage: React.FC = () => {
       toast({
         title: "Disconnected",
         description: "Connection to stream closed",
-        variant: "destructive"
+        variant: "destructive",
       });
 
       // Attempt to reconnect after 5 seconds if we were streaming
@@ -118,25 +129,24 @@ const EventPage: React.FC = () => {
   }, [roomId, streaming]);
 
   // Start streaming function
-  const startStream = async (type: 'camera' | 'screen') => {
+  const startStream = async (type: "camera" | "screen") => {
     try {
       setIsLoading(true);
-      
+
       // Get media stream based on type
-      const stream = await (type === 'camera' 
-        ? navigator.mediaDevices.getUserMedia({ 
-            video: { 
+      const stream = await (type === "camera"
+        ? navigator.mediaDevices.getUserMedia({
+            video: {
               width: { ideal: 1920 },
               height: { ideal: 1080 },
-              frameRate: { ideal: 30 }
-            }, 
-            audio: true 
+              frameRate: { ideal: 30 },
+            },
+            audio: true,
           })
-        : navigator.mediaDevices.getDisplayMedia({ 
-            video: true, 
-            audio: true 
-          })
-      );
+        : navigator.mediaDevices.getDisplayMedia({
+            video: true,
+            audio: true,
+          }));
 
       // Set video source
       if (videoRef.current) {
@@ -145,19 +155,22 @@ const EventPage: React.FC = () => {
 
       // Store stream reference
       streamRef.current = stream;
-      
+
       // Initialize WebSocket connection
       connectWebSocket();
 
       // Initialize MediaRecorder with optimal settings
       const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: 'video/webm;codecs=vp8,opus',
+        mimeType: "video/webm;codecs=vp8,opus",
         videoBitsPerSecond: 3000000, // 3 Mbps
       });
 
       // Handle data available event
       mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0 && wsRef.current?.readyState === WebSocket.OPEN) {
+        if (
+          event.data.size > 0 &&
+          wsRef.current?.readyState === WebSocket.OPEN
+        ) {
           wsRef.current.send(event.data);
         }
       };
@@ -169,9 +182,9 @@ const EventPage: React.FC = () => {
       setIsLoading(false);
 
       // Handle track end events
-      stream.getTracks().forEach(track => {
+      stream.getTracks().forEach((track) => {
         track.onended = () => {
-          console.log('Track ended:', track.kind);
+          console.log("Track ended:", track.kind);
           stopStream();
         };
       });
@@ -180,10 +193,9 @@ const EventPage: React.FC = () => {
         title: "Stream Started",
         description: `Started ${type} stream successfully`,
       });
-
     } catch (err) {
-      console.error('Error accessing media devices:', err);
-      setError('Failed to access media devices');
+      console.error("Error accessing media devices:", err);
+      setError("Failed to access media devices");
       setIsLoading(false);
       toast({
         title: "Stream Error",
@@ -196,13 +208,16 @@ const EventPage: React.FC = () => {
   // Stop streaming function
   const stopStream = useCallback(() => {
     // Stop MediaRecorder if active
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+    if (
+      mediaRecorderRef.current &&
+      mediaRecorderRef.current.state !== "inactive"
+    ) {
       mediaRecorderRef.current.stop();
     }
 
     // Stop all tracks and clear video source
     if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current.getTracks().forEach((track) => track.stop());
       if (videoRef.current) {
         videoRef.current.srcObject = null;
       }
@@ -217,7 +232,7 @@ const EventPage: React.FC = () => {
     setStreaming(false);
     setConnected(false);
     setViewers(0);
-    setError('');
+    setError("");
 
     toast({
       title: "Stream Ended",
@@ -236,13 +251,44 @@ const EventPage: React.FC = () => {
       });
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
-      console.error('Failed to copy:', err);
+      console.error("Failed to copy:", err);
       toast({
         title: "Copy Failed",
         description: "Failed to copy link to clipboard",
         variant: "destructive",
       });
     }
+  };
+
+  const uuid = () => {
+    var S4 = function () {
+      return (((1 + Math.random()) * 0x10000) | 0).toString(16).substring(1);
+    };
+    return (
+      S4() +
+      S4() +
+      "-" +
+      S4() +
+      "-" +
+      S4() +
+      "-" +
+      S4() +
+      "-" +
+      S4() +
+      S4() +
+      S4()
+    );
+  };
+
+  const changeModule = async (module: string) => {
+    const moduleAction = {
+      TYPE: module,
+      SESSION_ID: roomId,
+      SENDER: user?.username || "",
+      ID: uuid(),
+    };
+    console.log(moduleAction);
+    await sendModuleAction(moduleAction);
   };
 
   // Cleanup on unmount
@@ -258,9 +304,11 @@ const EventPage: React.FC = () => {
         <CardContent className="p-6">
           {/* Connection Status */}
           <div className="flex items-center gap-2 mb-4">
-            <div className={`w-2 h-2 rounded-full ${connected ? 'bg-green-500' : 'bg-red-500'}`} />
+            <div
+              className={`w-2 h-2 rounded-full ${connected ? "bg-green-500" : "bg-red-500"}`}
+            />
             <span className="text-sm text-gray-500">
-              {connected ? 'Connected' : 'Disconnected'}
+              {connected ? "Connected" : "Disconnected"}
             </span>
             {streaming && (
               <div className="flex items-center ml-4">
@@ -305,7 +353,7 @@ const EventPage: React.FC = () => {
             {/* Stream Control Buttons */}
             <div className="flex items-center space-x-4">
               <Button
-                onClick={() => startStream('camera')}
+                onClick={() => startStream("camera")}
                 disabled={streaming || isLoading}
                 className="flex items-center"
               >
@@ -313,7 +361,7 @@ const EventPage: React.FC = () => {
                 Start Camera
               </Button>
               <Button
-                onClick={() => startStream('screen')}
+                onClick={() => startStream("screen")}
                 disabled={streaming || isLoading}
                 className="flex items-center"
               >
@@ -321,13 +369,37 @@ const EventPage: React.FC = () => {
                 Share Screen
               </Button>
               {streaming && (
-                <Button
-                  onClick={stopStream}
-                  variant="destructive"
-                >
+                <Button onClick={stopStream} variant="destructive">
                   Stop Stream
                 </Button>
               )}
+            </div>
+
+            <div className="flex items-center justify-center mt-4">
+              <Button
+                onClick={() => {
+                  changeModule("video");
+                }}
+                className="text-3xl mx-8 px-8 py-6 font-alatsi"
+              >
+                Video
+              </Button>
+              <Button
+                onClick={() => {
+                  changeModule("slides");
+                }}
+                className="text-3xl mx-8 px-8 py-6 font-alatsi"
+              >
+                Slides
+              </Button>
+              <Button
+                onClick={() => {
+                  changeModule("text");
+                }}
+                className="text-3xl mx-8 px-8 py-6 font-alatsi"
+              >
+                Text
+              </Button>
             </div>
 
             {/* Stream Info and Share URL */}
@@ -336,15 +408,13 @@ const EventPage: React.FC = () => {
                 <div className="flex items-center space-x-4">
                   <div className="flex items-center">
                     <Users className="mr-2 h-4 w-4" />
-                    <span>{viewers} viewer{viewers !== 1 ? 's' : ''}</span>
+                    <span>
+                      {viewers} viewer{viewers !== 1 ? "s" : ""}
+                    </span>
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center space-x-2">
-                      <Input
-                        value={shareUrl}
-                        readOnly
-                        className="flex-1"
-                      />
+                      <Input value={shareUrl} readOnly className="flex-1" />
                       <Button
                         onClick={copyShareUrl}
                         variant="outline"
@@ -362,11 +432,11 @@ const EventPage: React.FC = () => {
 
                 {/* Stream Information Panel */}
                 <div className="mt-4 p-4 border rounded-lg">
-                  <h3 className="text-lg font-semibold mb-2">Stream Information</h3>
+                  <h3 className="text-lg font-semibold mb-2">
+                    Stream Information
+                  </h3>
                   <div className="space-y-2">
-                    <p className="text-sm text-gray-500">
-                      Room ID: {roomId}
-                    </p>
+                    <p className="text-sm text-gray-500">Room ID: {roomId}</p>
                     <p className="text-sm text-gray-500">
                       Active Viewers: {viewers}
                     </p>

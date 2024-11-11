@@ -6,6 +6,8 @@ import { useEffect, useState } from "react";
 import { useLocation, useParams } from "react-router";
 import { useAppContext } from "@/contexts/AppContext";
 import { Button } from "@/components/shadcn/ui/button";
+import { ModuleConnection } from "@/utils/messaging-client";
+import { ModuleAction } from "./EventPage";
 
 export interface WatchParty {
   id: number;
@@ -53,7 +55,19 @@ const ViewerPage = () => {
 
   // Define consistent dimensions for the content area
   const contentWrapperStyle =
-    "w-full h-[500px] md:h-[600px] bg-gray-900 flex items-center justify-center mb-6"; // Adjust height as needed
+    "w-full h-[500px] md:h-[600px] flex items-center justify-center mb-6"; // Adjust height as needed
+
+  useEffect(() => {
+    const cleanupWebSocket = ModuleConnection({
+      roomID: roomId!,
+      onReceived: (action: ModuleAction) => {
+        console.log("Received ModuleAction:", action);
+        setOptionSelected(action.TYPE);
+      },
+    });
+
+    return cleanupWebSocket;
+  }, [roomId]);
 
   const renderContent = () => {
     switch (optionSelected) {
@@ -70,7 +84,7 @@ const ViewerPage = () => {
         return (
           <p className="text-white text-center text-3xl">Slides Placeholder</p>
         );
-      case "textarea":
+      case "text":
         return (
           <p className="text-white text-center text-3xl">Text Placeholder</p>
         );
@@ -79,57 +93,11 @@ const ViewerPage = () => {
     }
   };
 
-  const handleButtonClick = (option: string) => {
-    if (optionSelected === option) {
-      setTransitioning(true);
-      setTimeout(() => {
-        setOptionSelected(null);
-        setTransitioning(false);
-      }, TRANSITION_DURATION);
-      return;
-    }
-
-    setTransitioning(true);
-    try {
-      setTimeout(() => {
-        setOptionSelected(option);
-        setTransitioning(false);
-      }, TRANSITION_DURATION);
-    } catch (error) {
-      console.error(`Error in handleButtonClick: ${error}`);
-      setTransitioning(false);
-    }
-  };
-
   return (
     <div>
       <div className="grid grid-cols-1 gap-y-2 md:grid-cols-4 md:gap-x-4">
         <div className="col-span-3 min-h-80">
           <div className={contentWrapperStyle}>{renderContent()}</div>
-
-          <div className="flex items-center justify-center mt-4">
-            <Button
-              onClick={() => handleButtonClick("video")}
-              variant="ghost"
-              className={buttonTextFormat}
-            >
-              Video
-            </Button>
-            <Button
-              onClick={() => handleButtonClick("slides")}
-              variant="ghost"
-              className={buttonTextFormat}
-            >
-              Slides
-            </Button>
-            <Button
-              onClick={() => handleButtonClick("textarea")}
-              variant="ghost"
-              className={buttonTextFormat}
-            >
-              Text
-            </Button>
-          </div>
         </div>
 
         <div className="col-span-1">

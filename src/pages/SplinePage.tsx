@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/shadcn/ui/button";
-import Spline from '@splinetool/react-spline';
+import Spline from "@splinetool/react-spline";
 
 const SplinePage: React.FC = () => {
   const navigate = useNavigate();
@@ -18,7 +18,7 @@ const SplinePage: React.FC = () => {
   }, []);
 
   const handleWelcomeClick = () => {
-    navigate('/home');
+    navigate("/home");
   };
 
   return (
@@ -31,12 +31,17 @@ const SplinePage: React.FC = () => {
 
       <div className="absolute inset-0">
         {!loadError && (
-          <div style={{ opacity: isLoading ? 0 : 1, transition: 'opacity 0.5s ease-in-out' }}>
+          <div
+            style={{
+              opacity: isLoading ? 0 : 1,
+              transition: "opacity 0.5s ease-in-out",
+            }}
+          >
             <Spline
               scene="https://prod.spline.design/fM6WpzHtdDHYNfoN/scene.splinecode"
               onLoad={() => {
                 setIsLoading(false);
-                console.log('Spline scene loaded successfully');
+                console.log("Spline scene loaded successfully");
               }}
               onError={() => {
                 setLoadError(true);
@@ -48,17 +53,17 @@ const SplinePage: React.FC = () => {
       </div>
 
       {showButton && !isLoading && !loadError && (
-        <div 
+        <div
           className="absolute left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-30"
-          style={{ top: '90%' }}
+          style={{ top: "90%" }}
         >
           <Button
             onClick={handleWelcomeClick}
             className="px-8 py-4 text-xl font-bold bg-white text-black hover:bg-gray-200 transition-all duration-300 ease-in-out
                    opacity-0 animate-fadeIn"
             style={{
-              animationFillMode: 'forwards',
-              animationDelay: '0.5s'
+              animationFillMode: "forwards",
+              animationDelay: "0.5s",
             }}
           >
             Welcome
