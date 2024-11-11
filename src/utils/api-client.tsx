@@ -3,6 +3,11 @@ import { RegisterFormData } from "../pages/host/HostRegisterPage.tsx";
 import axios from "axios";
 import { User } from "@/utils/types";
 import { CreateEventFormData } from "@/pages/host/HostCreateEvent.tsx";
+import {
+  JoinEventFormData,
+  JoinEventResponseData,
+} from "@/pages/LandingPage.tsx";
+import { toast } from "@/components/shadcn/ui/use-toast.ts";
 
 const API_BASE_URL = "http://localhost:8080";
 
@@ -128,7 +133,6 @@ export const getChatMessagesByRoomID = async (roomID: string) => {
   }
 };
 
-
 export const createOrGetCustomer = async (email: string) => {
   console.log("Creating or getting customer for email:", email);
   try {
@@ -238,12 +242,12 @@ export const createEvent = async (formData: CreateEventFormData) => {
         accountID: "1",
         password: formData.password,
         scheduledDate: formData.scheduledDate,
-        scheduledTime: formData.scheduledTime
+        scheduledTime: formData.scheduledTime,
       },
       {
         headers: {
           "Content-Type": "application/json",
-        }
+        },
       }
     )
     .then((response) => {
@@ -253,18 +257,15 @@ export const createEvent = async (formData: CreateEventFormData) => {
       throw new Error(error.message);
     });
   return response;
-}
+};
 
 export const getEvents = async (accountID: string) => {
   const response = await axios
-    .get(
-      `${API_BASE_URL}/api/event/getByUserId/${accountID}`,
-      {
-        headers: {
-          "Content-Type": "application/json",
-        }
-      }
-    )
+    .get(`${API_BASE_URL}/api/event/getByUserId/${accountID}`, {
+      headers: {
+        "Content-Type": "application/json",
+      },
+    })
     .then((response) => {
       return response;
     })
@@ -272,4 +273,22 @@ export const getEvents = async (accountID: string) => {
       throw new Error(error.message);
     });
   return response;
-}
+};
+
+export const joinEvent = async (data: JoinEventFormData) => {
+  const response: Response = await fetch(
+    "http://localhost:8080/api/event/join",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data),
+    }
+  );
+  if (!response.ok) {
+    const errorMessage = await response.text();
+    throw new Error(errorMessage || "Failed to join event");
+  }
+  return await response.json();
+};

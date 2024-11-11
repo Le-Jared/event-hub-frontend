@@ -6,15 +6,23 @@ import { useAppContext } from "@/contexts/AppContext";
 import { useForm } from "react-hook-form";
 import { useMutation } from "react-query";
 import { User } from "@/utils/types";
+import { joinEvent } from "@/utils/api-client";
 import { useNavigate } from "react-router-dom";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import HostLoginPage from "./host/HostLoginPage";
 import HostRegisterPage from "./host/HostRegisterPage";
 
-type JoinEventFormData = {
-  eventCode: string;
-  eventPassword: string;
+export type JoinEventFormData = {
+  code: string;
+  password: string;
   displayName: string;
+};
+
+export type JoinEventResponseData = {
+  token: string;
+  videoSource: string;
+  roomId: string;
+  host: boolean;
 };
 
 const LandingPage = () => {
@@ -35,28 +43,37 @@ const LandingPage = () => {
   const buttonTextFormat = "text-3xl mx-8 px-8 py-6 font-alatsi";
   const TRANSITION_DURATION = 300;
 
-  const joinEventMutation = useMutation<User, Error, JoinEventFormData>(
-    async (data) => {
-      const response = await fetch('/api/join-event', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-      });
+  const joinEventMutation = useMutation<
+    JoinEventResponseData,
+    Error,
+    JoinEventFormData
+  >(
+    async (data: JoinEventFormData) => {
+      const response: Response = await fetch(
+        "http://localhost:8080/api/event/join",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(data),
+        }
+      );
       if (!response.ok) {
-        throw new Error('Failed to join event');
+        const errorMessage = await response.text();
+        throw new Error(errorMessage || "Failed to join event");
       }
-      return response.json();
+      return await response.json();
     },
     {
-      onSuccess: () => {
+      onSuccess: (data: JoinEventResponseData) => {
+        const { roomId: code } = data;
         setIsLoading(false);
         toast({
           title: "Success",
           description: "Joined event successfully!",
         });
-        navigate("/stream");
+        navigate(`/waiting/${code}`);
       },
       onError: (error: Error) => {
         setIsLoading(false);
@@ -125,12 +142,12 @@ const LandingPage = () => {
               Event Code
               <input
                 className={inputFieldFormat}
-                {...register("eventCode", {
+                {...register("code", {
                   required: "Event code is required",
                 })}
               />
-              {errors.eventCode && (
-                <span className={errorTextFormat}>{errors.eventCode.message}</span>
+              {errors.code && (
+                <span className={errorTextFormat}>{errors.code.message}</span>
               )}
             </label>
 
@@ -139,12 +156,14 @@ const LandingPage = () => {
               <input
                 className={inputFieldFormat}
                 type="password"
-                {...register("eventPassword", {
+                {...register("password", {
                   required: "Event password is required",
                 })}
               />
-              {errors.eventPassword && (
-                <span className={errorTextFormat}>{errors.eventPassword.message}</span>
+              {errors.password && (
+                <span className={errorTextFormat}>
+                  {errors.password.message}
+                </span>
               )}
             </label>
 
@@ -157,7 +176,9 @@ const LandingPage = () => {
                 })}
               />
               {errors.displayName && (
-                <span className={errorTextFormat}>{errors.displayName.message}</span>
+                <span className={errorTextFormat}>
+                  {errors.displayName.message}
+                </span>
               )}
             </label>
 
@@ -197,9 +218,11 @@ const LandingPage = () => {
         {showHostButtons ? "Back" : "Host"}
       </Button>
 
-      <div className={`flex flex-col transition-all duration-300 ${
-        optionSelected === null ? "" : "scale-90"
-      }`}>
+      <div
+        className={`flex flex-col transition-all duration-300 ${
+          optionSelected === null ? "" : "scale-90"
+        }`}
+      >
         <img
           src={logo}
           alt="EventHub Logo"
