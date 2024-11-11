@@ -13,6 +13,8 @@ import ViewerPage from "@/pages/ViewerPage";
 import EventPage from "@/pages/EventPage";
 import HostHomePage from "@/pages/host/HostHomePage";
 import SplineLayout from "../routes/SplineLayout";
+import HostCreateEvent from "@/pages/host/HostCreateEvent";
+import HostManageEvent from "@/pages/host/HostManageEvent";
 
 const router = createBrowserRouter([
   {
@@ -48,6 +50,18 @@ const router = createBrowserRouter([
       {
         path: "host",
         element: <HostHomePage />,
+      },
+      {
+        path: "host/create",
+        element: (
+            <HostCreateEvent/>
+        ),
+      },
+      {
+        path: "host/manage",
+        element: (
+            <HostManageEvent/>
+        ),
       },
     ],
   },
