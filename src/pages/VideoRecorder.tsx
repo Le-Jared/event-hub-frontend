@@ -1,15 +1,22 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Webcam from 'react-webcam';
 import { useReactMediaRecorder } from 'react-media-recorder';
-import { Video, StopCircle, Save, Trash2, RefreshCcw } from 'lucide-react';
-import { Progress } from "@/components/shadcn/ui/progress";  
+import { Video, StopCircle, Save, Trash2, RefreshCcw, Brain } from 'lucide-react';
+import { Progress } from "@/components/shadcn/ui/progress";
+import { Button } from "@/components/shadcn/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/shadcn/ui/select";
+import * as faceapi from 'face-api.js';
 
 const VideoRecorder: React.FC = () => {
   const webcamRef = useRef<Webcam>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const [recordedVideoUrl, setRecordedVideoUrl] = useState<string | null>(null);
   const [isRecording, setIsRecording] = useState(false);
   const [recordingDuration, setRecordingDuration] = useState(0);
   const [notification, setNotification] = useState<string | null>(null);
+  const [isMLActive, setIsMLActive] = useState(false);
+  const [mlMode, setMlMode] = useState<'expression' | 'age-gender'>('expression');
+  const [mlResult, setMlResult] = useState<string | null>(null);
 
   const { status, startRecording, stopRecording } = useReactMediaRecorder({
     video: true,
@@ -20,7 +27,7 @@ const VideoRecorder: React.FC = () => {
     },
   });
 
-  React.useEffect(() => {
+  useEffect(() => {
     let interval: NodeJS.Timeout;
     if (isRecording) {
       interval = setInterval(() => {
@@ -29,6 +36,74 @@ const VideoRecorder: React.FC = () => {
     }
     return () => clearInterval(interval);
   }, [isRecording]);
+
+  useEffect(() => {
+    if (isMLActive) {
+      loadModels();
+    }
+  }, [isMLActive]);
+
+  const loadModels = async () => {
+    try {
+      await Promise.all([
+        faceapi.nets.tinyFaceDetector.loadFromUri('/models'),
+        faceapi.nets.faceLandmark68Net.loadFromUri('/models'),
+        faceapi.nets.faceRecognitionNet.loadFromUri('/models'),
+        faceapi.nets.faceExpressionNet.loadFromUri('/models'),
+        faceapi.nets.ageGenderNet.loadFromUri('/models')
+      ]);
+      showNotification('ML models loaded successfully');
+    } catch (error) {
+      console.error('Error loading ML models:', error);
+      showNotification('Failed to load ML models');
+    }
+  };
+
+  const runMLDetection = async () => {
+    if (!webcamRef.current || !isMLActive || !canvasRef.current) return;
+
+    const video = webcamRef.current.video;
+    const canvas = canvasRef.current;
+    if (!video) return;
+
+    const displaySize = { width: video.videoWidth, height: video.videoHeight };
+    faceapi.matchDimensions(canvas, displaySize);
+
+    const detection = await faceapi
+      .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
+      .withFaceLandmarks()
+      .withFaceExpressions()
+      .withAgeAndGender();
+
+    if (detection) {
+      const resizedDetection = faceapi.resizeResults(detection, displaySize);
+      
+      canvas.getContext('2d')?.clearRect(0, 0, canvas.width, canvas.height);
+      faceapi.draw.drawDetections(canvas, resizedDetection);
+
+      if (mlMode === 'expression') {
+        const expressions = detection.expressions;
+        const topExpression = Object.entries(expressions).reduce((a, b) => a[1] > b[1] ? a : b);
+        setMlResult(`Expression: ${topExpression[0]} (${(topExpression[1] * 100).toFixed(2)}%)`);
+      } else {
+        setMlResult(`Age: ${Math.round(detection.age)}, Gender: ${detection.gender}`);
+      }
+    } else {
+      setMlResult('No face detected');
+      canvas.getContext('2d')?.clearRect(0, 0, canvas.width, canvas.height);
+    }
+  };
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (isMLActive) {
+      interval = setInterval(runMLDetection, 100);
+    } else if (canvasRef.current) {
+      const canvas = canvasRef.current;
+      canvas.getContext('2d')?.clearRect(0, 0, canvas.width, canvas.height);
+    }
+    return () => clearInterval(interval);
+  }, [isMLActive, mlMode]);
 
   const showNotification = (message: string) => {
     setNotification(message);
@@ -113,10 +188,19 @@ const VideoRecorder: React.FC = () => {
             height={720}
             className="rounded-lg shadow-lg w-full"
           />
+          <canvas
+            ref={canvasRef}
+            className="absolute top-0 left-0 w-full h-full"
+          />
           {isRecording && (
             <div className="absolute top-4 right-4 bg-red-500 text-white px-3 py-1 rounded-full flex items-center space-x-2">
               <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
               <span>{formatTime(recordingDuration)}</span>
+            </div>
+          )}
+          {isMLActive && mlResult && (
+            <div className="absolute bottom-4 left-4 bg-black bg-opacity-70 text-white px-3 py-1 rounded-lg">
+              {mlResult}
             </div>
           )}
         </div>
@@ -127,53 +211,73 @@ const VideoRecorder: React.FC = () => {
 
         <div className="flex flex-wrap gap-4 justify-center">
           {!isRecording ? (
-            <button 
+            <Button 
               onClick={handleStartRecording} 
               disabled={status === 'recording'}
-              className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg flex items-center space-x-2 min-w-[160px] disabled:opacity-50"
+              className="bg-blue-500 hover:bg-blue-600 text-white"
             >
-              <Video className="w-5 h-5" /> 
-              <span>Start Recording</span>
-            </button>
+              <Video className="w-5 h-5 mr-2" /> 
+              Start Recording
+            </Button>
           ) : (
-            <button 
+            <Button 
               onClick={handleStopRecording} 
-              className="bg-red-500 hover:bg-red-600 text-white px-6 py-2 rounded-lg flex items-center space-x-2 min-w-[160px]"
+              className="bg-red-500 hover:bg-red-600 text-white"
             >
-              <StopCircle className="w-5 h-5" /> 
-              <span>Stop Recording</span>
-            </button>
+              <StopCircle className="w-5 h-5 mr-2" /> 
+              Stop Recording
+            </Button>
           )}
           
-          <button 
+          <Button 
             onClick={saveVideo} 
             disabled={!recordedVideoUrl}
-            className="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg flex items-center space-x-2 min-w-[160px] disabled:opacity-50"
+            className="bg-green-500 hover:bg-green-600 text-white"
           >
-            <Save className="w-5 h-5" /> 
-            <span>Save Video</span>
-          </button>
+            <Save className="w-5 h-5 mr-2" /> 
+            Save Video
+          </Button>
 
           {recordedVideoUrl && (
             <>
-              <button 
+              <Button 
                 onClick={deleteVideo}
-                className="bg-red-500 hover:bg-red-600 text-white px-6 py-2 rounded-lg flex items-center space-x-2 min-w-[160px]"
+                className="bg-red-500 hover:bg-red-600 text-white"
               >
-                <Trash2 className="w-5 h-5" /> 
-                <span>Delete Video</span>
-              </button>
-              <button 
+                <Trash2 className="w-5 h-5 mr-2" /> 
+                Delete Video
+              </Button>
+              <Button 
                 onClick={() => {
                   setRecordedVideoUrl(null);
                   handleStartRecording();
                 }}
-                className="border border-gray-300 hover:bg-gray-100 px-6 py-2 rounded-lg flex items-center space-x-2 min-w-[160px]"
+                className="border border-gray-300 hover:bg-gray-100"
               >
-                <RefreshCcw className="w-5 h-5" /> 
-                <span>Record New</span>
-              </button>
+                <RefreshCcw className="w-5 h-5 mr-2" /> 
+                Record New
+              </Button>
             </>
+          )}
+
+          <Button
+            onClick={() => setIsMLActive(!isMLActive)}
+            className={`${isMLActive ? 'bg-purple-500 hover:bg-purple-600' : 'bg-gray-500 hover:bg-gray-600'} text-white`}
+          >
+            <Brain className="w-5 h-5 mr-2" />
+            {isMLActive ? 'Disable ML' : 'Enable ML'}
+          </Button>
+
+          {isMLActive && (
+            <Select value={mlMode} onValueChange={(value: 'expression' | 'age-gender') => setMlMode(value)}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Select ML mode" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="expression">Expression</SelectItem>
+                <SelectItem value="age-gender">Age & Gender</SelectItem>
+              </SelectContent>
+            </Select>
           )}
         </div>
 
