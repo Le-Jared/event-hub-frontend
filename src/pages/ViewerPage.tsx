@@ -1,14 +1,17 @@
-import React, { useState, useEffect } from 'react';
-import { Card } from '@/components/shadcn/ui/card';
-import { ScrollArea } from '@/components/shadcn/ui/scroll-area';
-import { Video, Image, FileQuestion } from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import { Card } from "@/components/shadcn/ui/card";
+import { ScrollArea } from "@/components/shadcn/ui/scroll-area";
+import { Video, Image, FileQuestion } from "lucide-react";
 import LiveChat from "@/components/LiveChat";
 import Chatbot from "@/components/experimental/ChatBot";
-import LiveIndicator from './components/LiveIndicator';
-import PollComponent from './components/PollComponent';
+import LiveIndicator from "./components/LiveIndicator";
+import PollComponent from "./components/PollComponent";
+import { ModuleConnection } from "@/utils/messaging-client";
+import { useParams } from "react-router-dom";
+import { dummyComponents, ModuleAction } from "./EventPage";
 
 // WebSocket connection
-const WS_URL = 'ws://localhost:8080/moduleAction';
+const WS_URL = "ws://localhost:8080/moduleAction";
 
 interface ComponentItem {
   id: string;
@@ -41,41 +44,65 @@ const componentIcons: { [key: string]: React.ReactNode } = {
 
 const ViewerPage: React.FC = () => {
   const [socket, setSocket] = useState<WebSocket | null>(null);
-  const [currentComponent, setCurrentComponent] = useState<ComponentItem | null>(null);
+  const [currentComponent, setCurrentComponent] =
+    useState<ComponentItem | null>(null);
   const [streamStatus, setStreamStatus] = useState<StreamStatus>({
     isLive: false,
-    viewerCount: 0
+    viewerCount: 0,
   });
+  const { roomId } = useParams();
+  const roomID = roomId ? roomId.toString() : "";
 
   const handlePollVote = (optionId: number) => {
     if (socket?.readyState === WebSocket.OPEN) {
-      socket.send(JSON.stringify({
-        type: 'POLL_VOTE',
-        optionId: optionId
-      }));
+      socket.send(
+        JSON.stringify({
+          type: "POLL_VOTE",
+          optionId: optionId,
+        })
+      );
     }
   };
 
+  useEffect(() => {
+    const cleanupWebSocket = ModuleConnection({
+      roomID: roomID,
+      onReceived: (action: ModuleAction) => {
+        console.log("Received ModuleAction:", action);
+        const component = dummyComponents.find(
+          (component) => component.id === action.ID
+        );
+        if (component) {
+          setCurrentComponent(component);
+        }
+      },
+    });
+
+    return cleanupWebSocket;
+  }, [roomId]);
+
   const handleWebSocketMessage = (data: WebSocketMessage) => {
     switch (data.TYPE) {
-      case 'COMPONENT_CHANGE':
+      case "COMPONENT_CHANGE":
         if (data.ID && data.SENDER) {
           setCurrentComponent({
             id: data.ID,
             type: data.TYPE,
             title: `Component from ${data.SENDER}`,
-            icon: componentIcons[data.TYPE] || <FileQuestion className="w-6 h-6" />,
+            icon: componentIcons[data.TYPE] || (
+              <FileQuestion className="w-6 h-6" />
+            ),
             content: `Content for ${data.TYPE}`,
           });
         }
         break;
-      case 'VIEWER_COUNT':
-        setStreamStatus(prev => ({
+      case "VIEWER_COUNT":
+        setStreamStatus((prev) => ({
           ...prev,
-          viewerCount: data.count || 0
+          viewerCount: data.count || 0,
         }));
         break;
-      case 'POLL_UPDATE':
+      case "POLL_UPDATE":
         break;
       default:
         break;
@@ -84,20 +111,22 @@ const ViewerPage: React.FC = () => {
 
   useEffect(() => {
     const ws = new WebSocket(WS_URL);
-    
+
     ws.onopen = () => {
-      console.log('Connected to WebSocket');
-      setStreamStatus(prev => ({ ...prev, isLive: true }));
+      console.log("Connected to WebSocket");
+      setStreamStatus((prev) => ({ ...prev, isLive: true }));
       // Join the room as a viewer
-      ws.send(JSON.stringify({
-        type: 'JOIN_ROOM',
-        role: 'viewer'
-      }));
+      ws.send(
+        JSON.stringify({
+          type: "JOIN_ROOM",
+          role: "viewer",
+        })
+      );
     };
 
     ws.onerror = (error) => {
-      console.error('WebSocket error:', error);
-      setStreamStatus(prev => ({ ...prev, isLive: false }));
+      console.error("WebSocket error:", error);
+      setStreamStatus((prev) => ({ ...prev, isLive: false }));
     };
 
     ws.onmessage = (event) => {
@@ -105,12 +134,12 @@ const ViewerPage: React.FC = () => {
         const data = JSON.parse(event.data);
         handleWebSocketMessage(data);
       } catch (error) {
-        console.error('Error parsing WebSocket message:', error);
+        console.error("Error parsing WebSocket message:", error);
       }
     };
 
     ws.onclose = () => {
-      console.log('Disconnected from WebSocket');
+      console.log("Disconnected from WebSocket");
       setStreamStatus({ isLive: false, viewerCount: 0 });
     };
 
@@ -140,7 +169,9 @@ const ViewerPage: React.FC = () => {
             {currentComponent ? (
               <div className="text-center p-6">
                 <div className="mb-4">{currentComponent.icon}</div>
-                <h2 className="text-xl font-semibold mb-4">{currentComponent.title}</h2>
+                <h2 className="text-xl font-semibold mb-4">
+                  {currentComponent.title}
+                </h2>
                 {currentComponent.imageUrl && (
                   <img
                     src={currentComponent.imageUrl}
@@ -151,7 +182,9 @@ const ViewerPage: React.FC = () => {
                 <p className="text-white">{currentComponent.content}</p>
               </div>
             ) : (
-              <p className="text-gray-400">Waiting for presenter to share content...</p>
+              <p className="text-gray-400">
+                Waiting for presenter to share content...
+              </p>
             )}
           </Card>
         </div>

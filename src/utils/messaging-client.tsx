@@ -163,6 +163,7 @@ export const ModuleConnection = (options: ModuleClientOptions) => {
         const topic = `/topic/moduleAction/${roomID}`;
         console.log(`Connected and subscribed to: ${topic}`);
         moduleClient.subscribe(topic, (message: any) => {
+          console.log(message);
           const newAction = JSON.parse(message.body);
           console.log(`New ModuleAction received: ${newAction.TYPE}`);
           onReceived(newAction);

@@ -1,15 +1,34 @@
 import LiveChat from "@/components/LiveChat";
-import React, { useState, useEffect } from 'react';
-import { DragDropContext, Droppable, Draggable, type DropResult } from '@/components/shadcn/ui/dnd';
-import { Card } from '@/components/shadcn/ui/card';
-import { ScrollArea } from '@/components/shadcn/ui/scroll-area';
-import { Video, Image, FileVideo, Radio, MessageSquare, HelpCircle, BarChart } from 'lucide-react';
-import { Button } from '@/components/shadcn/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/shadcn/ui/select";
-import { useParams, useNavigate } from 'react-router-dom';
-import SockJS from 'sockjs-client';
-import { Stomp } from '@stomp/stompjs';
-import LiveIndicator from './components/LiveIndicator';
+import React, { useState, useEffect } from "react";
+import {
+  DragDropContext,
+  Droppable,
+  Draggable,
+  type DropResult,
+} from "@/components/shadcn/ui/dnd";
+import { Card } from "@/components/shadcn/ui/card";
+import { ScrollArea } from "@/components/shadcn/ui/scroll-area";
+import {
+  Video,
+  Image,
+  FileVideo,
+  Radio,
+  MessageSquare,
+  HelpCircle,
+  BarChart,
+} from "lucide-react";
+import { Button } from "@/components/shadcn/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/shadcn/ui/select";
+import { useParams, useNavigate } from "react-router-dom";
+import SockJS from "sockjs-client";
+import { Stomp } from "@stomp/stompjs";
+import LiveIndicator from "./components/LiveIndicator";
 
 interface ComponentItem {
   id: string;
@@ -27,7 +46,7 @@ interface StreamStatus {
   sessionId?: string;
 }
 
-interface ModuleAction {
+export interface ModuleAction {
   ID: string;
   TYPE: string;
   SESSION_ID: string;
@@ -35,42 +54,42 @@ interface ModuleAction {
   TIMESTAMP: string;
 }
 
-const dummyComponents: ComponentItem[] = [
+export const dummyComponents: ComponentItem[] = [
   {
-    id: '1',
-    type: 'slide',
-    title: 'Demo Slide',
+    id: "1",
+    type: "slide",
+    title: "Demo Slide",
     icon: <Image className="w-6 h-6" />,
-    content: 'Welcome to the presentation!',
-    imageUrl: 'https://picsum.photos/400/300?random=1',
-    link: '/slide/1'
+    content: "Welcome to the presentation!",
+    imageUrl: "https://picsum.photos/400/300?random=1",
+    link: "/slide/1",
   },
   {
-    id: '2',
-    type: 'video',
-    title: 'Recording',
+    id: "2",
+    type: "video",
+    title: "Recording",
     icon: <Video className="w-6 h-6" />,
-    content: 'Product demonstration video',
-    imageUrl: 'https://picsum.photos/400/300?random=2',
-    link: '/record'
+    content: "Product demonstration video",
+    imageUrl: "https://picsum.photos/400/300?random=2",
+    link: "/record",
   },
   {
-    id: '3',
-    type: 'video',
-    title: 'Demo Video',
+    id: "3",
+    type: "video",
+    title: "Demo Video",
     icon: <FileVideo className="w-6 h-6" />,
-    content: 'Demo Video',
-    imageUrl: 'https://picsum.photos/400/300?random=3',
-    link: '/video'
+    content: "Demo Video",
+    imageUrl: "https://picsum.photos/400/300?random=3",
+    link: "/video",
   },
   {
-    id: '4',
-    type: 'video',
-    title: 'Live Webcam',
+    id: "4",
+    type: "video",
+    title: "Live Webcam",
     icon: <Radio className="w-6 h-6" />,
-    content: 'See it Live',
-    imageUrl: 'https://picsum.photos/400/300?random=4',
-    link: '/live'
+    content: "See it Live",
+    imageUrl: "https://picsum.photos/400/300?random=4",
+    link: "/live",
   },
 ];
 
@@ -78,38 +97,46 @@ const EventPage: React.FC = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
   const navigate = useNavigate();
   const [stompClient, setStompClient] = useState<any>(null);
-  const [currentComponent, setCurrentComponent] = useState<ComponentItem | null>(null);
+  const [currentComponent, setCurrentComponent] =
+    useState<ComponentItem | null>(null);
   const [components] = useState<ComponentItem[]>(dummyComponents);
   const [streamStatus, setStreamStatus] = useState<StreamStatus>({
     isLive: false,
     viewerCount: 0,
-    sessionId: sessionId
+    sessionId: sessionId,
   });
-  const [interactionType, setInteractionType] = useState<'chat' | 'qa' | 'poll'>('chat');
+  const [interactionType, setInteractionType] = useState<
+    "chat" | "qa" | "poll"
+  >("chat");
+  const { roomId } = useParams();
 
   useEffect(() => {
     const connectWebSocket = () => {
-      const socket = new SockJS('http://localhost:8080/moduleAction');
+      const socket = new SockJS("http://localhost:8080/moduleAction");
       const stomp = Stomp.over(socket);
 
-      stomp.connect({}, () => {
-        console.log('Connected to WebSocket');
-        setStreamStatus(prev => ({ ...prev, isLive: true }));
+      stomp.connect(
+        {},
+        () => {
+          console.log("Connected to WebSocket");
+          setStreamStatus((prev) => ({ ...prev, isLive: true }));
 
-        stomp.subscribe(`/topic/moduleAction/${sessionId}`, (message) => {
-          try {
-            const action: ModuleAction = JSON.parse(message.body);
-            handleModuleAction(action);
-          } catch (error) {
-            console.error('Error parsing message:', error);
-          }
-        });
+          stomp.subscribe(`/topic/moduleAction/${sessionId}`, (message) => {
+            try {
+              const action: ModuleAction = JSON.parse(message.body);
+              handleModuleAction(action);
+            } catch (error) {
+              console.error("Error parsing message:", error);
+            }
+          });
 
-        setStompClient(stomp);
-      }, (error: any) => {
-        console.error('WebSocket connection error:', error);
-        setStreamStatus(prev => ({ ...prev, isLive: false }));
-      });
+          setStompClient(stomp);
+        },
+        (error: any) => {
+          console.error("WebSocket connection error:", error);
+          setStreamStatus((prev) => ({ ...prev, isLive: false }));
+        }
+      );
     };
 
     connectWebSocket();
@@ -122,9 +149,9 @@ const EventPage: React.FC = () => {
   }, [sessionId]);
 
   const handleModuleAction = (action: ModuleAction) => {
-    console.log('Received module action:', action);
+    console.log("Received module action:", action);
 
-    const component = components.find(item => item.id === action.ID);
+    const component = components.find((item) => item.id === action.ID);
     if (component) {
       setCurrentComponent(component);
     }
@@ -133,25 +160,27 @@ const EventPage: React.FC = () => {
   const handleDragEnd = (result: DropResult): void => {
     const { destination, source, draggableId } = result;
 
-    if (!destination || 
-        (destination.droppableId === source.droppableId && 
-        destination.index === source.index)) {
+    if (
+      !destination ||
+      (destination.droppableId === source.droppableId &&
+        destination.index === source.index)
+    ) {
       return;
     }
 
-    if (destination.droppableId === 'main-stage') {
-      const component = components.find(item => item.id === draggableId);
+    if (destination.droppableId === "main-stage") {
+      const component = components.find((item) => item.id === draggableId);
       if (component && stompClient) {
         setCurrentComponent(component);
-        
+
         const action: ModuleAction = {
           ID: component.id,
           TYPE: component.type,
-          SESSION_ID: sessionId!,
-          SENDER: 'presenter',
-          TIMESTAMP: new Date().toISOString()
+          SESSION_ID: roomId,
+          SENDER: "presenter",
+          TIMESTAMP: new Date().toISOString(),
         };
-
+        console.log("sending module action from eventpage");
         stompClient.send("/app/moduleAction", {}, JSON.stringify(action));
       }
     }
@@ -159,9 +188,9 @@ const EventPage: React.FC = () => {
 
   const handleGoLive = () => {
     if (!streamStatus.isLive && stompClient) {
-      setStreamStatus(prev => ({ ...prev, isLive: true }));
+      setStreamStatus((prev) => ({ ...prev, isLive: true }));
     } else {
-      setStreamStatus(prev => ({ ...prev, isLive: false }));
+      setStreamStatus((prev) => ({ ...prev, isLive: false }));
       if (stompClient) {
         stompClient.disconnect();
       }
@@ -170,7 +199,7 @@ const EventPage: React.FC = () => {
 
   const handleComponentClick = (component: ComponentItem) => {
     if (component.title === "Recording") {
-      navigate('/record');
+      navigate("/record");
     } else {
       setCurrentComponent(component);
     }
@@ -178,11 +207,11 @@ const EventPage: React.FC = () => {
 
   const renderInteractionComponent = () => {
     switch (interactionType) {
-      case 'chat':
+      case "chat":
         return <LiveChat />;
-      case 'qa':
+      case "qa":
         return <div>Q&A Component</div>;
-      case 'poll':
+      case "poll":
         return <div>Poll Component</div>;
       default:
         return null;
@@ -200,7 +229,7 @@ const EventPage: React.FC = () => {
               onClick={handleGoLive}
               variant={streamStatus.isLive ? "destructive" : "default"}
             >
-              {streamStatus.isLive ? 'End Stream' : 'Go Live'}
+              {streamStatus.isLive ? "End Stream" : "Go Live"}
             </Button>
           </div>
         </div>
@@ -211,17 +240,19 @@ const EventPage: React.FC = () => {
           <div className="flex-[3] p-6">
             <Droppable droppableId="main-stage">
               {(provided, snapshot) => (
-                <Card 
+                <Card
                   ref={provided.innerRef}
                   {...provided.droppableProps}
                   className={`h-full flex items-center justify-center bg-gray-800 ${
-                    snapshot.isDraggingOver ? 'border-2 border-blue-400' : ''
+                    snapshot.isDraggingOver ? "border-2 border-blue-400" : ""
                   }`}
                 >
                   {currentComponent ? (
                     <div className="text-center p-6">
                       <div className="mb-4">{currentComponent.icon}</div>
-                      <h2 className="text-xl font-semibold mb-4">{currentComponent.title}</h2>
+                      <h2 className="text-xl font-semibold mb-4">
+                        {currentComponent.title}
+                      </h2>
                       {currentComponent.imageUrl && (
                         <img
                           src={currentComponent.imageUrl}
@@ -251,7 +282,7 @@ const EventPage: React.FC = () => {
                     <div
                       ref={provided.innerRef}
                       {...provided.droppableProps}
-                      className={`space-y-2 ${snapshot.isDraggingOver ? 'bg-gray-700' : ''}`}
+                      className={`space-y-2 ${snapshot.isDraggingOver ? "bg-gray-700" : ""}`}
                     >
                       {components.map((item, index) => (
                         <Draggable
@@ -265,15 +296,19 @@ const EventPage: React.FC = () => {
                               {...provided.draggableProps}
                               {...provided.dragHandleProps}
                               className={`p-4 cursor-pointer bg-gray-700 hover:bg-gray-600 ${
-                                snapshot.isDragging ? 'shadow-lg' : ''
+                                snapshot.isDragging ? "shadow-lg" : ""
                               }`}
                               onClick={() => handleComponentClick(item)}
                             >
                               <div className="flex items-center space-x-3">
                                 {item.icon}
                                 <div>
-                                  <h3 className="font-medium text-white">{item.title}</h3>
-                                  <p className="text-sm text-gray-300">{item.type}</p>
+                                  <h3 className="font-medium text-white">
+                                    {item.title}
+                                  </h3>
+                                  <p className="text-sm text-gray-300">
+                                    {item.type}
+                                  </p>
                                 </div>
                               </div>
                             </Card>
@@ -289,7 +324,11 @@ const EventPage: React.FC = () => {
 
             {/* Interaction Component */}
             <div className="flex-1 p-4">
-              <Select onValueChange={(value: 'chat' | 'qa' | 'poll') => setInteractionType(value)}>
+              <Select
+                onValueChange={(value: "chat" | "qa" | "poll") =>
+                  setInteractionType(value)
+                }
+              >
                 <SelectTrigger className="w-full mb-2 bg-gray-700 text-white">
                   <SelectValue placeholder="Select interaction type" />
                 </SelectTrigger>
