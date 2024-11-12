@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import Webcam from 'react-webcam';
 import { useReactMediaRecorder } from 'react-media-recorder';
 import { Video, StopCircle, Save, Trash2, RefreshCcw } from 'lucide-react';
-import { Progress } from "@/components/shadcn/ui/progress";  // Make sure this points to your Progress component file
+import { Progress } from "@/components/shadcn/ui/progress";  
 
 const VideoRecorder: React.FC = () => {
   const webcamRef = useRef<Webcam>(null);

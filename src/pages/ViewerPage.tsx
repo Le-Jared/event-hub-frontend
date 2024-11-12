@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Card } from '@/components/shadcn/ui/card';
 import { ScrollArea } from '@/components/shadcn/ui/scroll-area';
-import { Video, Image, FileQuestion, Users, Radio, MessageSquare } from 'lucide-react';
-import { Badge } from '@/components/shadcn/ui/badge';
+import { Video, Image, FileQuestion } from 'lucide-react';
 import LiveChat from "@/components/LiveChat";
+import Chatbot from "@/components/experimental/ChatBot";
+import LiveIndicator from './components/LiveIndicator';
+import PollComponent from './components/PollComponent';
 
 // WebSocket connection
 const WS_URL = 'ws://localhost:8080/moduleAction';
@@ -23,31 +25,19 @@ interface StreamStatus {
   roomId?: string;
 }
 
+interface WebSocketMessage {
+  TYPE: string;
+  ID?: string;
+  SENDER?: string;
+  count?: number;
+  data?: any;
+}
+
 const componentIcons: { [key: string]: React.ReactNode } = {
   slide: <Image className="w-6 h-6" />,
   video: <Video className="w-6 h-6" />,
   quiz: <FileQuestion className="w-6 h-6" />,
 };
-
-const LiveIndicator: React.FC<StreamStatus> = ({ isLive, viewerCount }) => (
-  <div className="flex items-center space-x-4 text-white">
-    <div className="flex items-center">
-      <Badge 
-        variant={isLive ? "destructive" : "secondary"}
-        className="flex items-center gap-2"
-      >
-        <Radio className="w-4 h-4 animate-pulse" />
-        <span>{isLive ? 'LIVE' : 'OFFLINE'}</span>
-      </Badge>
-    </div>
-    {isLive && (
-      <div className="flex items-center space-x-2">
-        <Users className="w-4 h-4" />
-        <span className="text-sm font-medium">{viewerCount} viewers</span>
-      </div>
-    )}
-  </div>
-);
 
 const ViewerPage: React.FC = () => {
   const [socket, setSocket] = useState<WebSocket | null>(null);
@@ -56,6 +46,41 @@ const ViewerPage: React.FC = () => {
     isLive: false,
     viewerCount: 0
   });
+
+  const handlePollVote = (optionId: number) => {
+    if (socket?.readyState === WebSocket.OPEN) {
+      socket.send(JSON.stringify({
+        type: 'POLL_VOTE',
+        optionId: optionId
+      }));
+    }
+  };
+
+  const handleWebSocketMessage = (data: WebSocketMessage) => {
+    switch (data.TYPE) {
+      case 'COMPONENT_CHANGE':
+        if (data.ID && data.SENDER) {
+          setCurrentComponent({
+            id: data.ID,
+            type: data.TYPE,
+            title: `Component from ${data.SENDER}`,
+            icon: componentIcons[data.TYPE] || <FileQuestion className="w-6 h-6" />,
+            content: `Content for ${data.TYPE}`,
+          });
+        }
+        break;
+      case 'VIEWER_COUNT':
+        setStreamStatus(prev => ({
+          ...prev,
+          viewerCount: data.count || 0
+        }));
+        break;
+      case 'POLL_UPDATE':
+        break;
+      default:
+        break;
+    }
+  };
 
   useEffect(() => {
     const ws = new WebSocket(WS_URL);
@@ -78,27 +103,7 @@ const ViewerPage: React.FC = () => {
     ws.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
-        switch (data.TYPE) {
-          case 'COMPONENT_CHANGE':
-            if (data.ID && data.SENDER) {
-              setCurrentComponent({
-                id: data.ID,
-                type: data.TYPE,
-                title: `Component from ${data.SENDER}`,
-                icon: componentIcons[data.TYPE] || <FileQuestion className="w-6 h-6" />,
-                content: `Content for ${data.TYPE}`,
-              });
-            }
-            break;
-          case 'VIEWER_COUNT':
-            setStreamStatus(prev => ({
-              ...prev,
-              viewerCount: data.count
-            }));
-            break;
-          default:
-            break;
-        }
+        handleWebSocketMessage(data);
       } catch (error) {
         console.error('Error parsing WebSocket message:', error);
       }
@@ -112,7 +117,7 @@ const ViewerPage: React.FC = () => {
     setSocket(ws);
 
     return () => {
-      if (ws) {
+      if (ws && ws.readyState === WebSocket.OPEN) {
         ws.close();
       }
     };
@@ -151,19 +156,24 @@ const ViewerPage: React.FC = () => {
           </Card>
         </div>
 
-        {/* Right Sidebar: Live Chat */}
+        {/* Right Sidebar */}
         <div className="flex-1 bg-gray-800 shadow-lg flex flex-col">
-          <div className="p-4 border-b border-gray-700">
-            <h2 className="text-lg font-semibold mb-4 flex items-center">
-              <MessageSquare className="w-5 h-5 mr-2" />
-              Live Chat
-            </h2>
+          {/* Poll Section */}
+          <div className="flex-1 overflow-hidden">
+            <ScrollArea className="h-full">
+              <PollComponent onVote={handlePollVote} />
+            </ScrollArea>
           </div>
-          <ScrollArea className="flex-1">
-            <LiveChat />
-          </ScrollArea>
+
+          {/* Live Chat */}
+          <div className="flex-1 border-b border-gray-700">
+            <ScrollArea className="h-full">
+              <LiveChat />
+            </ScrollArea>
+          </div>
         </div>
       </div>
+      <Chatbot />
     </div>
   );
 };

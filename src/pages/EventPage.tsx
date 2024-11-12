@@ -3,13 +3,13 @@ import React, { useState, useEffect } from 'react';
 import { DragDropContext, Droppable, Draggable, type DropResult } from '@/components/shadcn/ui/dnd';
 import { Card } from '@/components/shadcn/ui/card';
 import { ScrollArea } from '@/components/shadcn/ui/scroll-area';
-import { Video, Image, FileQuestion, Users, Radio, MessageSquare, HelpCircle, BarChart } from 'lucide-react';
-import { Badge } from '@/components/shadcn/ui/badge';
+import { Video, Image, FileQuestion, MessageSquare, HelpCircle, BarChart } from 'lucide-react';
 import { Button } from '@/components/shadcn/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/shadcn/ui/select";
 import { useParams, useNavigate } from 'react-router-dom';
 import SockJS from 'sockjs-client';
 import { Stomp } from '@stomp/stompjs';
+import LiveIndicator from './components/LiveIndicator';
 
 interface ComponentItem {
   id: string;
@@ -39,7 +39,7 @@ const dummyComponents: ComponentItem[] = [
   {
     id: '1',
     type: 'slide',
-    title: 'Introduction Slide',
+    title: 'Demo Slide',
     icon: <Image className="w-6 h-6" />,
     content: 'Welcome to the presentation!',
     imageUrl: 'https://picsum.photos/400/300?random=1',
@@ -57,34 +57,22 @@ const dummyComponents: ComponentItem[] = [
   {
     id: '3',
     type: 'video',
-    title: 'Video',
+    title: 'Demo Video',
     icon: <FileQuestion className="w-6 h-6" />,
-    content: 'Test your understanding',
+    content: 'Demo Video',
     imageUrl: 'https://picsum.photos/400/300?random=3',
     link: '/video'
   },
+  {
+    id: '4',
+    type: 'video',
+    title: 'Live Video',
+    icon: <FileQuestion className="w-6 h-6" />,
+    content: 'See it Live',
+    imageUrl: 'https://picsum.photos/400/300?random=4',
+    link: '/live'
+  },
 ];
-
-const LiveIndicator: React.FC<StreamStatus> = ({ isLive, viewerCount, sessionId }) => (
-  <div className="flex items-center space-x-4 text-white">
-    <div className="flex items-center">
-      <Badge 
-        variant={isLive ? "destructive" : "secondary"}
-        className="flex items-center gap-2"
-      >
-        <Radio className="w-4 h-4 animate-pulse" />
-        <span>{isLive ? 'LIVE' : 'OFFLINE'}</span>
-      </Badge>
-    </div>
-    {isLive && (
-      <div className="flex items-center space-x-2">
-        <Users className="w-4 h-4" />
-        <span className="text-sm font-medium">{viewerCount} viewers</span>
-        <span className="text-sm text-gray-400">Session: {sessionId}</span>
-      </div>
-    )}
-  </div>
-);
 
 const EventPage: React.FC = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
@@ -181,7 +169,11 @@ const EventPage: React.FC = () => {
   };
 
   const handleComponentClick = (component: ComponentItem) => {
-    navigate(component.link);
+    if (component.title === "Recording") {
+      navigate('/record');
+    } else {
+      setCurrentComponent(component);
+    }
   };
 
   const renderInteractionComponent = () => {
