@@ -42,13 +42,15 @@ import {
 // WebSocket connection
 const WS_URL = "ws://localhost:8080/event";
 
-interface ComponentItem {
-  id: string;
-  type: string;
-  title: string;
-  icon: React.ReactNode;
-  content: string;
-  imageUrl?: string;
+export interface ComponentItem {
+  ID: string;
+  TYPE: string;
+  TITLE: string;
+  ICON: React.ReactNode;
+  CONTENT: string;
+  IMAGE_URL?: string;
+  SESSION_ID?: string | undefined;
+  SENDER?: string | undefined;
 }
 
 interface StreamStatus {
@@ -70,30 +72,30 @@ export type ModuleAction = {
   ID: string;
 };
 
-const dummyComponents: ComponentItem[] = [
+export const dummyComponents: ComponentItem[] = [
   {
-    id: "1",
-    type: "slide",
-    title: "Introduction Slide",
-    icon: <Image className="w-6 h-6" />,
-    content: "Welcome to the presentation!",
-    imageUrl: "https://picsum.photos/400/300?random=1",
+    ID: "1",
+    TYPE: "slide",
+    TITLE: "Introduction Slide",
+    ICON: <Image className="w-6 h-6" />,
+    CONTENT: "Welcome to the presentation!",
+    IMAGE_URL: "https://picsum.photos/400/300?random=1",
   },
   {
-    id: "2",
-    type: "video",
-    title: "Demo Video",
-    icon: <Video className="w-6 h-6" />,
-    content: "Product demonstration video",
-    imageUrl: "https://picsum.photos/400/300?random=2",
+    ID: "2",
+    TYPE: "video",
+    TITLE: "Demo Video",
+    ICON: <Video className="w-6 h-6" />,
+    CONTENT: "Product demonstration video",
+    IMAGE_URL: "https://picsum.photos/400/300?random=2",
   },
   {
-    id: "3",
-    type: "quiz",
-    title: "Knowledge Check",
-    icon: <FileQuestion className="w-6 h-6" />,
-    content: "Test your understanding",
-    imageUrl: "https://picsum.photos/400/300?random=3",
+    ID: "3",
+    TYPE: "quiz",
+    TITLE: "Knowledge Check",
+    ICON: <FileQuestion className="w-6 h-6" />,
+    CONTENT: "Test your understanding",
+    IMAGE_URL: "https://picsum.photos/400/300?random=3",
   },
 ];
 
@@ -122,11 +124,11 @@ const EventPage: React.FC = () => {
   const { roomId } = useParams<{ roomId: string }>();
   const [connected, setConnected] = useState(false);
   const [error, setError] = useState<string>("");
-  const [isLoading, setIsLoading] = useState(false);
+  // const [isLoading, setIsLoading] = useState(false);
   const [streaming, setStreaming] = useState(false);
   const [viewers, setViewers] = useState(0);
   const [shareUrl, setShareUrl] = useState("");
-  const [copied, setCopied] = useState(false);
+  // const [copied, setCopied] = useState(false);
   const [interactionType, setInteractionType] = useState<
     "chat" | "qa" | "poll"
   >("chat");
@@ -253,11 +255,17 @@ const EventPage: React.FC = () => {
     }
 
     if (destination.droppableId === "main-stage") {
-      const component = components.find((item) => item.id === draggableId);
+      const component = components.find((item) => item.ID === draggableId);
       if (component) {
         setCurrentComponent(component);
+        // assign props before sending
+        component.SENDER = user?.username;
+        component.SESSION_ID = roomId;
+        console.log(component);
+        sendModuleAction(component);
 
         if (socket?.readyState === WebSocket.OPEN) {
+          console.log("changing component");
           socket.send(
             JSON.stringify({
               type: "COMPONENT_CHANGE",
@@ -434,16 +442,16 @@ const EventPage: React.FC = () => {
     );
   };
 
-  const changeModule = async (module: string) => {
-    const moduleAction = {
-      TYPE: module,
-      SESSION_ID: roomId,
-      SENDER: user?.username || "",
-      ID: uuid(),
-    };
-    console.log(moduleAction);
-    await sendModuleAction(moduleAction);
-  };
+  // const changeModule = async (module: string) => {
+  //   const moduleAction = {
+  //     TYPE: module,
+  //     SESSION_ID: roomId,
+  //     SENDER: user?.username || "",
+  //     ID: uuid(),
+  //   };
+  //   console.log(moduleAction);
+  //   await sendModuleAction(moduleAction);
+  // };
 
   // Cleanup on unmount
   useEffect(() => {
@@ -483,18 +491,18 @@ const EventPage: React.FC = () => {
                 >
                   {currentComponent ? (
                     <div className="text-center p-6">
-                      <div className="mb-4">{currentComponent.icon}</div>
+                      <div className="mb-4">{currentComponent.ICON}</div>
                       <h2 className="text-xl font-semibold mb-4">
-                        {currentComponent.title}
+                        {currentComponent.TITLE}
                       </h2>
-                      {currentComponent.imageUrl && (
+                      {currentComponent.IMAGE_URL && (
                         <img
-                          src={currentComponent.imageUrl}
-                          alt={currentComponent.title}
+                          src={currentComponent.IMAGE_URL}
+                          alt={currentComponent.TITLE}
                           className="mx-auto mb-4 rounded-lg shadow-md"
                         />
                       )}
-                      <p className="text-white">{currentComponent.content}</p>
+                      <p className="text-white">{currentComponent.CONTENT}</p>
                     </div>
                   ) : (
                     <p className="text-gray-400">Drag a component here</p>
@@ -520,8 +528,8 @@ const EventPage: React.FC = () => {
                     >
                       {components.map((item, index) => (
                         <Draggable
-                          key={item.id}
-                          draggableId={item.id}
+                          key={item.ID}
+                          draggableId={item.ID}
                           index={index}
                         >
                           {(provided: any, snapshot: any) => (
@@ -534,13 +542,13 @@ const EventPage: React.FC = () => {
                               }`}
                             >
                               <div className="flex items-center space-x-3">
-                                {item.icon}
+                                {item.ICON}
                                 <div>
                                   <h3 className="font-medium text-white">
-                                    {item.title}
+                                    {item.TITLE}
                                   </h3>
                                   <p className="text-sm text-gray-300">
-                                    {item.type}
+                                    {item.TYPE}
                                   </p>
                                 </div>
                               </div>

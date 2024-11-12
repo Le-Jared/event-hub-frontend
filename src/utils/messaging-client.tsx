@@ -3,7 +3,7 @@ import SockJS from "sockjs-client";
 import * as apiClient from "@/utils/api-client";
 import { Message } from "@/components/LiveChat";
 import { Emoji } from "@/components/EmojiReaction";
-import { ModuleAction } from "@/pages/EventPage";
+import { ComponentItem, ModuleAction } from "@/pages/EventPage";
 import Module from "module";
 
 export interface MessagingClientOptions {
@@ -184,7 +184,7 @@ export const ModuleConnection = (options: ModuleClientOptions) => {
   };
 };
 
-export const sendModuleAction = async (action: ModuleAction) => {
+export const sendModuleAction = async (action: ComponentItem) => {
   if (moduleClient && moduleClient.connected) {
     console.log("Sending module action:", action);
     moduleClient.send("/app/moduleAction", {}, JSON.stringify(action));
