@@ -31,7 +31,7 @@ import SockJS from "sockjs-client";
 import { Stomp } from "@stomp/stompjs";
 import LiveIndicator from "./components/LiveIndicator";
 
-interface ComponentItem {
+export interface ComponentItem {
   id: string;
   type: string;
   title: string;
@@ -62,7 +62,7 @@ export const dummyComponents: ComponentItem[] = [
     title: "Demo Slide",
     icon: <Image className="w-6 h-6" />,
     content: "Welcome to the presentation!",
-    imageUrl: "https://picsum.photos/400/300?random=1",
+    imageUrl: "https://picsum.photos/seed/picsum/600/400",
     link: "/slide/1",
   },
   {
@@ -71,7 +71,7 @@ export const dummyComponents: ComponentItem[] = [
     title: "Recording",
     icon: <Video className="w-6 h-6" />,
     content: "Product demonstration video",
-    imageUrl: "https://picsum.photos/400/300?random=2",
+    imageUrl: `https://picsum.photos/seed/jared/600/400`,
     link: "/record",
   },
   {
@@ -80,7 +80,7 @@ export const dummyComponents: ComponentItem[] = [
     title: "Demo Video",
     icon: <FileVideo className="w-6 h-6" />,
     content: "Demo Video",
-    imageUrl: "https://picsum.photos/400/300?random=3",
+    imageUrl: `https://picsum.photos/seed/timothy/600/400`,
     link: "/video",
   },
   {
@@ -89,7 +89,7 @@ export const dummyComponents: ComponentItem[] = [
     title: "Live Webcam",
     icon: <Radio className="w-6 h-6" />,
     content: "See it Live",
-    imageUrl: "https://picsum.photos/400/300?random=4",
+    imageUrl: `https://picsum.photos/seed/streamhub/600/400`,
     link: "/live",
   },
 ];
@@ -180,6 +180,7 @@ const EventPage: React.FC = () => {
           SESSION_ID: roomId,
           SENDER: "presenter",
           TIMESTAMP: new Date().toISOString(),
+          IMAGE_URL: component.imageUrl,
         };
         console.log("sending module action from eventpage");
         stompClient.send("/app/moduleAction", {}, JSON.stringify(action));

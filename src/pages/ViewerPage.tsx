@@ -167,11 +167,11 @@ const ViewerPage: React.FC = () => {
         <div className="flex-[3] p-6">
           <Card className="h-full flex items-center justify-center bg-gray-800">
             {currentComponent ? (
-              <div className="text-center p-6">
-                <div className="mb-4">{currentComponent.icon}</div>
-                <h2 className="text-xl font-semibold mb-4">
+              <div className="text-center p-6 w-full">
+                {/* <div className="mb-4">{currentComponent.icon}</div> */}
+                {/* <h2 className="text-xl font-semibold mb-4">
                   {currentComponent.title}
-                </h2>
+                </h2> */}
                 {currentComponent.imageUrl && (
                   <img
                     src={currentComponent.imageUrl}
@@ -179,7 +179,7 @@ const ViewerPage: React.FC = () => {
                     className="mx-auto mb-4 rounded-lg shadow-md"
                   />
                 )}
-                <p className="text-white">{currentComponent.content}</p>
+                {/* <p className="text-white">{currentComponent.content}</p> */}
               </div>
             ) : (
               <p className="text-gray-400">
