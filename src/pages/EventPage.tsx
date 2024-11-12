@@ -7,7 +7,7 @@ import { Video, Image, FileQuestion, Users, Radio, MessageSquare, HelpCircle, Ba
 import { Badge } from '@/components/shadcn/ui/badge';
 import { Button } from '@/components/shadcn/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/shadcn/ui/select";
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import SockJS from 'sockjs-client';
 import { Stomp } from '@stomp/stompjs';
 
@@ -18,6 +18,7 @@ interface ComponentItem {
   icon: React.ReactNode;
   content: string;
   imageUrl?: string;
+  link: string;
 }
 
 interface StreamStatus {
@@ -41,23 +42,26 @@ const dummyComponents: ComponentItem[] = [
     title: 'Introduction Slide',
     icon: <Image className="w-6 h-6" />,
     content: 'Welcome to the presentation!',
-    imageUrl: 'https://picsum.photos/400/300?random=1'
+    imageUrl: 'https://picsum.photos/400/300?random=1',
+    link: '/slide/1'
   },
   {
     id: '2',
     type: 'video',
-    title: 'Demo Video',
+    title: 'Recording',
     icon: <Video className="w-6 h-6" />,
     content: 'Product demonstration video',
-    imageUrl: 'https://picsum.photos/400/300?random=2'
+    imageUrl: 'https://picsum.photos/400/300?random=2',
+    link: '/record'
   },
   {
     id: '3',
-    type: 'quiz',
-    title: 'Knowledge Check',
+    type: 'video',
+    title: 'Video',
     icon: <FileQuestion className="w-6 h-6" />,
     content: 'Test your understanding',
-    imageUrl: 'https://picsum.photos/400/300?random=3'
+    imageUrl: 'https://picsum.photos/400/300?random=3',
+    link: '/video'
   },
 ];
 
@@ -84,6 +88,7 @@ const LiveIndicator: React.FC<StreamStatus> = ({ isLive, viewerCount, sessionId 
 
 const EventPage: React.FC = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
+  const navigate = useNavigate();
   const [stompClient, setStompClient] = useState<any>(null);
   const [currentComponent, setCurrentComponent] = useState<ComponentItem | null>(null);
   const [components] = useState<ComponentItem[]>(dummyComponents);
@@ -103,7 +108,6 @@ const EventPage: React.FC = () => {
         console.log('Connected to WebSocket');
         setStreamStatus(prev => ({ ...prev, isLive: true }));
 
-        // Subscribe to module actions for this session
         stomp.subscribe(`/topic/moduleAction/${sessionId}`, (message) => {
           try {
             const action: ModuleAction = JSON.parse(message.body);
@@ -152,7 +156,6 @@ const EventPage: React.FC = () => {
       if (component && stompClient) {
         setCurrentComponent(component);
         
-        // Send module action through WebSocket
         const action: ModuleAction = {
           ID: component.id,
           TYPE: component.type,
@@ -175,6 +178,10 @@ const EventPage: React.FC = () => {
         stompClient.disconnect();
       }
     }
+  };
+
+  const handleComponentClick = (component: ComponentItem) => {
+    navigate(component.link);
   };
 
   const renderInteractionComponent = () => {
@@ -265,9 +272,10 @@ const EventPage: React.FC = () => {
                               ref={provided.innerRef}
                               {...provided.draggableProps}
                               {...provided.dragHandleProps}
-                              className={`p-4 cursor-move bg-gray-700 hover:bg-gray-600 ${
+                              className={`p-4 cursor-pointer bg-gray-700 hover:bg-gray-600 ${
                                 snapshot.isDragging ? 'shadow-lg' : ''
                               }`}
+                              onClick={() => handleComponentClick(item)}
                             >
                               <div className="flex items-center space-x-3">
                                 {item.icon}

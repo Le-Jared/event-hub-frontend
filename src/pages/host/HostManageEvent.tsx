@@ -47,7 +47,7 @@ const HostManageEvent = () => {
       {/* Back Button */}
       <Button
         variant="ghost"
-        className="absolute top-4 left-4 text-white hover:text-gray-300"
+        className="absolute top-4 right-4 text-white hover:text-gray-300"
         onClick={() => navigate("/host")}
       >
         <ArrowLeft className="mr-2 h-4 w-4" />
