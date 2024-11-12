@@ -13,10 +13,10 @@ import {
   CardTitle,
 } from "@/components/shadcn/ui/card";
 import { Gamepad2, Dices, Grid3X3, Calculator, Clock } from "lucide-react";
-import Pong from "../components/Pong";
-import Checkers from "../components/Checkers";
-import Tetris from "../components/Tetris";
-import Game2048 from "../components/2048";
+import Pong from "../components/game/Pong";
+import Checkers from "../components/game/Checkers";
+import Tetris from "../components/game/Tetris";
+import Game2048 from "../components/game/2048";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/shadcn/ui/button";
 

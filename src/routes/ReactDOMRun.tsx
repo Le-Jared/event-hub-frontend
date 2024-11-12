@@ -15,6 +15,7 @@ import SplineLayout from "../routes/SplineLayout";
 import HostCreateEvent from "@/pages/host/HostCreateEvent";
 import HostManageEvent from "@/pages/host/HostManageEvent";
 import ViewerPage from "@/pages/ViewerPage";
+import Record from "@/pages/VideoRecorder";
 
 const router = createBrowserRouter([
   {
@@ -50,6 +51,10 @@ const router = createBrowserRouter([
       {
         path: "host",
         element: <HostHomePage />,
+      },
+      {
+        path: "record",
+        element: <Record />,
       },
       {
         path: "host/create",

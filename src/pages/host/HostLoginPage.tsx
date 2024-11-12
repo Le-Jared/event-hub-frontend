@@ -5,7 +5,7 @@ import { set, useForm } from "react-hook-form";
 import { useMutation } from "react-query";
 import * as apiClient from "@/utils/api-client";
 import { User } from "@/utils/types";
-import WordleLoginButton from "@/components/WordleLoginButton";
+import WordleLoginButton from "@/components/game/WordleLoginButton";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
