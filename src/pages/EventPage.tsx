@@ -1,4 +1,4 @@
-import LiveChat from "@/components/experimental/LiveChat";
+import LiveChat from "@/components/LiveChat";
 import React, { useState, useEffect } from 'react';
 import { DragDropContext, Droppable, Draggable, type DropResult } from '@/components/shadcn/ui/dnd';
 import { Card } from '@/components/shadcn/ui/card';

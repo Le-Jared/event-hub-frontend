@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { Message } from "./LiveChat";
-import { ScrollArea } from "../shadcn/ui/scroll-area";
+import { ScrollArea } from "./shadcn/ui/scroll-area";
 
 interface ChatHistoryProps {
   chatMessages: Message[];

@@ -3,7 +3,7 @@ import { Card } from '@/components/shadcn/ui/card';
 import { ScrollArea } from '@/components/shadcn/ui/scroll-area';
 import { Video, Image, FileQuestion, Users, Radio, MessageSquare } from 'lucide-react';
 import { Badge } from '@/components/shadcn/ui/badge';
-import LiveChat from "@/components/experimental/LiveChat";
+import LiveChat from "@/components/LiveChat";
 
 // WebSocket connection
 const WS_URL = 'ws://localhost:8080/moduleAction';
