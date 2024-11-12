@@ -177,10 +177,9 @@ const EventPage: React.FC = () => {
         const action: ModuleAction = {
           ID: component.id,
           TYPE: component.type,
-          SESSION_ID: roomId,
+          SESSION_ID: roomId ?? "",
           SENDER: "presenter",
           TIMESTAMP: new Date().toISOString(),
-          IMAGE_URL: component.imageUrl,
         };
         console.log("sending module action from eventpage");
         stompClient.send("/app/moduleAction", {}, JSON.stringify(action));
