@@ -1,143 +1,169 @@
-import LiveChat from "@/components/LiveChat";
-import PollView from "@/components/PollView";
-import VideoJSSynced from "@/components/VideoJSSynced";
-import VideoChatbot from "@/components/ChatBot";
-import { useEffect, useState } from "react";
-import { useLocation, useParams } from "react-router";
-import { useAppContext } from "@/contexts/AppContext";
-import { Button } from "@/components/shadcn/ui/button";
+import React, { useState, useEffect } from 'react';
+import { Card } from '@/components/shadcn/ui/card';
+import { ScrollArea } from '@/components/shadcn/ui/scroll-area';
+import { Video, Image, FileQuestion, Users, Radio, MessageSquare } from 'lucide-react';
+import { Badge } from '@/components/shadcn/ui/badge';
+import LiveChat from "@/components/experimental/LiveChat";
 
-export interface WatchParty {
-  id: number;
-  partyName: string;
-  scheduledDate: string;
-  scheduledTime: string;
-  code: string;
-  createdDate: number[];
-  password: string;
+// WebSocket connection
+const WS_URL = 'ws://localhost:8080/moduleAction';
+
+interface ComponentItem {
+  id: string;
+  type: string;
+  title: string;
+  icon: React.ReactNode;
+  content: string;
+  imageUrl?: string;
 }
 
-const ViewerPage = () => {
-  const params = useParams();
+interface StreamStatus {
+  isLive: boolean;
+  viewerCount: number;
+  roomId?: string;
+}
 
-  let location = useLocation();
-  const data = {
-    videoSource:
-      "http://localhost:8080/encoded/steamboatwillie_001/master.m3u8",
-    isHost: false,
-  };
-  const isHost = false;
+const componentIcons: { [key: string]: React.ReactNode } = {
+  slide: <Image className="w-6 h-6" />,
+  video: <Video className="w-6 h-6" />,
+  quiz: <FileQuestion className="w-6 h-6" />,
+};
 
-  const sessionId = params.sessionId ? params.sessionId.toString() : "1";
-  const videoJsOptions = {
-    sources: [
-      {
-        src: data.videoSource,
-        type: "application/x-mpegURL",
-      },
-    ],
-  };
-  const { roomId } = useParams();
-  let roomID = roomId === undefined ? "" : roomId;
+const LiveIndicator: React.FC<StreamStatus> = ({ isLive, viewerCount }) => (
+  <div className="flex items-center space-x-4 text-white">
+    <div className="flex items-center">
+      <Badge 
+        variant={isLive ? "destructive" : "secondary"}
+        className="flex items-center gap-2"
+      >
+        <Radio className="w-4 h-4 animate-pulse" />
+        <span>{isLive ? 'LIVE' : 'OFFLINE'}</span>
+      </Badge>
+    </div>
+    {isLive && (
+      <div className="flex items-center space-x-2">
+        <Users className="w-4 h-4" />
+        <span className="text-sm font-medium">{viewerCount} viewers</span>
+      </div>
+    )}
+  </div>
+);
 
-  const [blockDisposePlayer, setBlockDisposePlayer] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
+const ViewerPage: React.FC = () => {
+  const [socket, setSocket] = useState<WebSocket | null>(null);
+  const [currentComponent, setCurrentComponent] = useState<ComponentItem | null>(null);
+  const [streamStatus, setStreamStatus] = useState<StreamStatus>({
+    isLive: false,
+    viewerCount: 0
+  });
 
-  const { user } = useAppContext();
+  useEffect(() => {
+    const ws = new WebSocket(WS_URL);
+    
+    ws.onopen = () => {
+      console.log('Connected to WebSocket');
+      setStreamStatus(prev => ({ ...prev, isLive: true }));
+      // Join the room as a viewer
+      ws.send(JSON.stringify({
+        type: 'JOIN_ROOM',
+        role: 'viewer'
+      }));
+    };
 
-  const [optionSelected, setOptionSelected] = useState<string | null>("video"); // Default to "video"
-  const [transitioning, setTransitioning] = useState(false);
-  const TRANSITION_DURATION = 500;
-  const buttonTextFormat = "text-3xl mx-8 px-8 py-6 font-alatsi text-white";
+    ws.onerror = (error) => {
+      console.error('WebSocket error:', error);
+      setStreamStatus(prev => ({ ...prev, isLive: false }));
+    };
 
-  // Define consistent dimensions for the content area
-  const contentWrapperStyle =
-    "w-full h-[500px] md:h-[600px] bg-gray-900 flex items-center justify-center mb-6"; // Adjust height as needed
+    ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        switch (data.TYPE) {
+          case 'COMPONENT_CHANGE':
+            if (data.ID && data.SENDER) {
+              setCurrentComponent({
+                id: data.ID,
+                type: data.TYPE,
+                title: `Component from ${data.SENDER}`,
+                icon: componentIcons[data.TYPE] || <FileQuestion className="w-6 h-6" />,
+                content: `Content for ${data.TYPE}`,
+              });
+            }
+            break;
+          case 'VIEWER_COUNT':
+            setStreamStatus(prev => ({
+              ...prev,
+              viewerCount: data.count
+            }));
+            break;
+          default:
+            break;
+        }
+      } catch (error) {
+        console.error('Error parsing WebSocket message:', error);
+      }
+    };
 
-  const renderContent = () => {
-    switch (optionSelected) {
-      case "video":
-        return (
-          <VideoJSSynced
-            blockDisposePlayer={blockDisposePlayer}
-            options={videoJsOptions}
-            roomID={roomID}
-            isHost={isHost}
-          />
-        );
-      case "slides":
-        return (
-          <p className="text-white text-center text-3xl">Slides Placeholder</p>
-        );
-      case "textarea":
-        return (
-          <p className="text-white text-center text-3xl">Text Placeholder</p>
-        );
-      default:
-        return null;
-    }
-  };
+    ws.onclose = () => {
+      console.log('Disconnected from WebSocket');
+      setStreamStatus({ isLive: false, viewerCount: 0 });
+    };
 
-  const handleButtonClick = (option: string) => {
-    if (optionSelected === option) {
-      setTransitioning(true);
-      setTimeout(() => {
-        setOptionSelected(null);
-        setTransitioning(false);
-      }, TRANSITION_DURATION);
-      return;
-    }
+    setSocket(ws);
 
-    setTransitioning(true);
-    try {
-      setTimeout(() => {
-        setOptionSelected(option);
-        setTransitioning(false);
-      }, TRANSITION_DURATION);
-    } catch (error) {
-      console.error(`Error in handleButtonClick: ${error}`);
-      setTransitioning(false);
-    }
-  };
+    return () => {
+      if (ws) {
+        ws.close();
+      }
+    };
+  }, []);
 
   return (
-    <div>
-      <div className="grid grid-cols-1 gap-y-2 md:grid-cols-4 md:gap-x-4">
-        <div className="col-span-3 min-h-80">
-          <div className={contentWrapperStyle}>{renderContent()}</div>
-
-          <div className="flex items-center justify-center mt-4">
-            <Button
-              onClick={() => handleButtonClick("video")}
-              variant="ghost"
-              className={buttonTextFormat}
-            >
-              Video
-            </Button>
-            <Button
-              onClick={() => handleButtonClick("slides")}
-              variant="ghost"
-              className={buttonTextFormat}
-            >
-              Slides
-            </Button>
-            <Button
-              onClick={() => handleButtonClick("textarea")}
-              variant="ghost"
-              className={buttonTextFormat}
-            >
-              Text
-            </Button>
-          </div>
-        </div>
-
-        <div className="col-span-1">
-          <LiveChat />
+    <div className="flex flex-col h-screen bg-gray-900 text-white">
+      {/* Stream Status Bar */}
+      <div className="bg-gray-800 p-4 shadow-sm">
+        <div className="max-w-7xl mx-auto">
+          <LiveIndicator {...streamStatus} />
         </div>
       </div>
 
-      <VideoChatbot />
+      {/* Main Content */}
+      <div className="flex flex-1 overflow-hidden">
+        {/* Main Stage */}
+        <div className="flex-[3] p-6">
+          <Card className="h-full flex items-center justify-center bg-gray-800">
+            {currentComponent ? (
+              <div className="text-center p-6">
+                <div className="mb-4">{currentComponent.icon}</div>
+                <h2 className="text-xl font-semibold mb-4">{currentComponent.title}</h2>
+                {currentComponent.imageUrl && (
+                  <img
+                    src={currentComponent.imageUrl}
+                    alt={currentComponent.title}
+                    className="mx-auto mb-4 rounded-lg shadow-md"
+                  />
+                )}
+                <p className="text-white">{currentComponent.content}</p>
+              </div>
+            ) : (
+              <p className="text-gray-400">Waiting for presenter to share content...</p>
+            )}
+          </Card>
+        </div>
+
+        {/* Right Sidebar: Live Chat */}
+        <div className="flex-1 bg-gray-800 shadow-lg flex flex-col">
+          <div className="p-4 border-b border-gray-700">
+            <h2 className="text-lg font-semibold mb-4 flex items-center">
+              <MessageSquare className="w-5 h-5 mr-2" />
+              Live Chat
+            </h2>
+          </div>
+          <ScrollArea className="flex-1">
+            <LiveChat />
+          </ScrollArea>
+        </div>
+      </div>
     </div>
   );
 };

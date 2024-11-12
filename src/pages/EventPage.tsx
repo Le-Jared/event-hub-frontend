@@ -1,4 +1,4 @@
-import LiveChat from "@/components/LiveChat";
+import LiveChat from "@/components/experimental/LiveChat";
 import React, { useState, useEffect } from 'react';
 import { DragDropContext, Droppable, Draggable, type DropResult } from '@/components/shadcn/ui/dnd';
 import { Card } from '@/components/shadcn/ui/card';
@@ -7,9 +7,9 @@ import { Video, Image, FileQuestion, Users, Radio, MessageSquare, HelpCircle, Ba
 import { Badge } from '@/components/shadcn/ui/badge';
 import { Button } from '@/components/shadcn/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/shadcn/ui/select";
-
-// WebSocket connection
-const WS_URL = 'ws://localhost:8080/event';
+import { useParams } from 'react-router-dom';
+import SockJS from 'sockjs-client';
+import { Stomp } from '@stomp/stompjs';
 
 interface ComponentItem {
   id: string;
@@ -23,7 +23,15 @@ interface ComponentItem {
 interface StreamStatus {
   isLive: boolean;
   viewerCount: number;
-  roomId?: string;
+  sessionId?: string;
+}
+
+interface ModuleAction {
+  ID: string;
+  TYPE: string;
+  SESSION_ID: string;
+  SENDER: string;
+  TIMESTAMP: string;
 }
 
 const dummyComponents: ComponentItem[] = [
@@ -53,7 +61,7 @@ const dummyComponents: ComponentItem[] = [
   },
 ];
 
-const LiveIndicator: React.FC<StreamStatus> = ({ isLive, viewerCount }) => (
+const LiveIndicator: React.FC<StreamStatus> = ({ isLive, viewerCount, sessionId }) => (
   <div className="flex items-center space-x-4 text-white">
     <div className="flex items-center">
       <Badge 
@@ -68,101 +76,67 @@ const LiveIndicator: React.FC<StreamStatus> = ({ isLive, viewerCount }) => (
       <div className="flex items-center space-x-2">
         <Users className="w-4 h-4" />
         <span className="text-sm font-medium">{viewerCount} viewers</span>
+        <span className="text-sm text-gray-400">Session: {sessionId}</span>
       </div>
     )}
   </div>
 );
 
 const EventPage: React.FC = () => {
-  const [socket, setSocket] = useState<WebSocket | null>(null);
+  const { sessionId } = useParams<{ sessionId: string }>();
+  const [stompClient, setStompClient] = useState<any>(null);
   const [currentComponent, setCurrentComponent] = useState<ComponentItem | null>(null);
   const [components] = useState<ComponentItem[]>(dummyComponents);
   const [streamStatus, setStreamStatus] = useState<StreamStatus>({
     isLive: false,
-    viewerCount: 0
+    viewerCount: 0,
+    sessionId: sessionId
   });
   const [interactionType, setInteractionType] = useState<'chat' | 'qa' | 'poll'>('chat');
 
-  const connectWebSocket = () => {
-    try {
-      const ws = new WebSocket(WS_URL);
-      
-      ws.onopen = () => {
+  useEffect(() => {
+    const connectWebSocket = () => {
+      const socket = new SockJS('http://localhost:8080/moduleAction');
+      const stomp = Stomp.over(socket);
+
+      stomp.connect({}, () => {
         console.log('Connected to WebSocket');
         setStreamStatus(prev => ({ ...prev, isLive: true }));
-        // Join the room as a broadcaster
-        ws.send(JSON.stringify({
-          type: 'JOIN_ROOM',
-          role: 'broadcaster'
-        }));
-      };
 
-      ws.onerror = (error) => {
-        console.error('WebSocket error:', error);
+        // Subscribe to module actions for this session
+        stomp.subscribe(`/topic/moduleAction/${sessionId}`, (message) => {
+          try {
+            const action: ModuleAction = JSON.parse(message.body);
+            handleModuleAction(action);
+          } catch (error) {
+            console.error('Error parsing message:', error);
+          }
+        });
+
+        setStompClient(stomp);
+      }, (error: any) => {
+        console.error('WebSocket connection error:', error);
         setStreamStatus(prev => ({ ...prev, isLive: false }));
-      };
-
-      ws.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          switch (data.type) {
-            case 'COMPONENT_CHANGE':
-              if (data.component) {
-                setCurrentComponent(data.component);
-              }
-              break;
-            case 'VIEWER_COUNT':
-              setStreamStatus(prev => ({
-                ...prev,
-                viewerCount: data.count
-              }));
-              break;
-            default:
-              break;
-          }
-        } catch (error) {
-          console.error('Error parsing WebSocket message:', error);
-        }
-      };
-
-      ws.onclose = () => {
-        console.log('Disconnected from WebSocket');
-        setStreamStatus({ isLive: false, viewerCount: 0 });
-        // Attempt to reconnect after 5 seconds
-        setTimeout(() => {
-          if (streamStatus.isLive) {
-            connectWebSocket();
-          }
-        }, 5000);
-      };
-
-      setSocket(ws);
-    } catch (error) {
-      console.error('Error connecting to WebSocket:', error);
-      setStreamStatus(prev => ({ ...prev, isLive: false }));
-    }
-  };
-
-  const disconnectWebSocket = () => {
-    if (socket) {
-      socket.close();
-      setSocket(null);
-    }
-  };
-
-  const handleGoLive = () => {
-    if (!streamStatus.isLive) {
-      connectWebSocket();
-    } else {
-      disconnectWebSocket();
-    }
-  };
-
-  useEffect(() => {
-    return () => {
-      disconnectWebSocket();
+      });
     };
-  }, []);
+
+    connectWebSocket();
+
+    return () => {
+      if (stompClient) {
+        stompClient.disconnect();
+      }
+    };
+  }, [sessionId]);
+
+  const handleModuleAction = (action: ModuleAction) => {
+    console.log('Received module action:', action);
+
+    const component = components.find(item => item.id === action.ID);
+    if (component) {
+      setCurrentComponent(component);
+    }
+  };
 
   const handleDragEnd = (result: DropResult): void => {
     const { destination, source, draggableId } = result;
@@ -175,15 +149,30 @@ const EventPage: React.FC = () => {
 
     if (destination.droppableId === 'main-stage') {
       const component = components.find(item => item.id === draggableId);
-      if (component) {
+      if (component && stompClient) {
         setCurrentComponent(component);
         
-        if (socket?.readyState === WebSocket.OPEN) {
-          socket.send(JSON.stringify({
-            type: 'COMPONENT_CHANGE',
-            component
-          }));
-        }
+        // Send module action through WebSocket
+        const action: ModuleAction = {
+          ID: component.id,
+          TYPE: component.type,
+          SESSION_ID: sessionId!,
+          SENDER: 'presenter',
+          TIMESTAMP: new Date().toISOString()
+        };
+
+        stompClient.send("/app/moduleAction", {}, JSON.stringify(action));
+      }
+    }
+  };
+
+  const handleGoLive = () => {
+    if (!streamStatus.isLive && stompClient) {
+      setStreamStatus(prev => ({ ...prev, isLive: true }));
+    } else {
+      setStreamStatus(prev => ({ ...prev, isLive: false }));
+      if (stompClient) {
+        stompClient.disconnect();
       }
     }
   };
@@ -252,14 +241,14 @@ const EventPage: React.FC = () => {
             </Droppable>
           </div>
 
-          {/* Right Sidebar: Components Panel and Interaction Component */}
+          {/* Right Sidebar */}
           <div className="flex-1 bg-gray-800 shadow-lg flex flex-col">
             {/* Components Panel */}
             <div className="p-4 border-b border-gray-700">
               <h2 className="text-lg font-semibold mb-4">Components</h2>
               <Droppable droppableId="components-list">
                 {(provided, snapshot) => (
-                  <ScrollArea className="h-96"> 
+                  <ScrollArea className="h-96">
                     <div
                       ref={provided.innerRef}
                       {...provided.droppableProps}
