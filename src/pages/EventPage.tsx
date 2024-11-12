@@ -218,13 +218,27 @@ const EventPage: React.FC = () => {
     }
   };
 
+  const handleBack = () => {
+    navigate(-1);
+  };
+
   return (
     <DragDropContext onDragEnd={handleDragEnd}>
       <div className="flex flex-col h-screen bg-gray-900 text-white">
         {/* Stream Status Bar */}
         <div className="bg-gray-800 p-4 shadow-sm">
           <div className="max-w-7xl mx-auto flex justify-between items-center">
-            <LiveIndicator {...streamStatus} />
+            <div className="flex items-center space-x-4">
+              <Button
+                onClick={handleBack}
+                variant="secondary"
+                className="bg-gray-700 hover:bg-gray-600 text-white border border-gray-600"
+              >
+                <ArrowLeft className="w-5 h-5 mr-2" />
+                Back
+              </Button>
+              <LiveIndicator {...streamStatus} />
+            </div>
             <Button
               onClick={handleGoLive}
               variant={streamStatus.isLive ? "destructive" : "default"}
