@@ -273,7 +273,7 @@ const EventPage: React.FC = () => {
                         <img
                           src={currentComponent.imageUrl}
                           alt={currentComponent.title}
-                          className="mx-auto mb-4 rounded-lg shadow-md"
+                          className="mx-auto mb-4 rounded-lg shadow-md w-full h-[400px]"
                         />
                       )}
                       <p className="text-white">{currentComponent.content}</p>
