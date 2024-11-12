@@ -16,6 +16,7 @@ import {
   MessageSquare,
   HelpCircle,
   BarChart,
+  ArrowLeft,
 } from "lucide-react";
 import { Button } from "@/components/shadcn/ui/button";
 import {
