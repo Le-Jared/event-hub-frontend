@@ -3,6 +3,8 @@ import SockJS from "sockjs-client";
 import * as apiClient from "@/utils/api-client";
 import { Message } from "@/components/LiveChat";
 import { Emoji } from "@/components/EmojiReaction";
+import { ComponentItem, ModuleAction } from "@/pages/EventPage";
+import Module from "module";
 
 export interface MessagingClientOptions {
   roomID: string;
@@ -14,8 +16,14 @@ export interface EmojiClientOptions {
   onReceived: (emoji: Emoji) => void;
 }
 
+export interface ModuleClientOptions {
+  roomID: string;
+  onReceived: (action: ModuleAction) => void;
+}
+
 let client: any = null;
 let emojiClient: any = null;
+let moduleClient: any = null;
 
 /**
  * Initializes WebSocket connection and subscribes to the chat topic
@@ -24,7 +32,7 @@ export const initWebSocketConnection = (options: MessagingClientOptions) => {
   const { roomID, onMessageReceived } = options;
 
   const userToken = localStorage.getItem("watchparty-token");
-  
+
   let token = userToken?.substring(1, userToken.length - 1);
 
   // Set up WebSocket connection
@@ -90,13 +98,18 @@ export const EmojiConnection = (options: EmojiClientOptions) => {
   const { roomID, onReceived } = options;
 
   const userToken = localStorage.getItem("watchparty-token");
-  
+
   let token = userToken?.substring(1, userToken.length - 1);
 
   // Set up WebSocket connection
   // Avoid re-initializing the WebSocket connection if already connected
   if (!emojiClient || !emojiClient.connected) {
-    emojiClient = Stomp.over(() => new SockJS(`http://localhost:8080/emoji?token=${token}&roomID=${roomID}`));
+    emojiClient = Stomp.over(
+      () =>
+        new SockJS(
+          `http://localhost:8080/emoji?token=${token}&roomID=${roomID}`
+        )
+    );
     emojiClient.reconnectDelay = 5000; // Reconnect every 5 seconds if disconnected
 
     emojiClient.connect({}, () => {
@@ -131,4 +144,61 @@ export const EmojiConnection = (options: EmojiClientOptions) => {
       emojiClient = null;
     }
   };
+};
+
+export const ModuleConnection = (options: ModuleClientOptions) => {
+  const { roomID, onReceived } = options;
+  const userToken = localStorage.getItem("watchparty-token");
+  let token = userToken?.substring(1, userToken.length - 1);
+
+  if (!moduleClient || !moduleClient.connected) {
+    moduleClient = Stomp.over(
+      () => new SockJS(`http://localhost:8080/moduleAction?roomID=${roomID}`)
+    );
+    moduleClient.reconnectDelay = 5000;
+
+    moduleClient.connect(
+      {},
+      () => {
+        const topic = `/topic/moduleAction/${roomID}`;
+        console.log(`Connected and subscribed to: ${topic}`);
+        moduleClient.subscribe(topic, (message: any) => {
+          console.log(message);
+          const newAction = JSON.parse(message.body);
+          console.log(`New ModuleAction received: ${newAction.TYPE}`);
+          onReceived(newAction);
+        });
+      },
+      (error: Error) => {
+        console.error("WebSocket connection error:", error);
+      }
+    );
+  }
+
+  return () => {
+    if (moduleClient && moduleClient.connected) {
+      moduleClient.disconnect(() =>
+        console.log("Disconnected from WebSocket - moduleClient")
+      );
+      moduleClient = null;
+    }
+  };
+};
+
+export const sendModuleAction = async (action: ComponentItem) => {
+  if (moduleClient && moduleClient.connected) {
+    console.log("Sending module action:", action);
+    moduleClient.send("/app/moduleAction", {}, JSON.stringify(action));
+  } else {
+    moduleClient = Stomp.over(
+      () =>
+        new SockJS(
+          `http://localhost:8080/moduleAction?roomID=${action.SESSION_ID}`
+        )
+    );
+    moduleClient.connect({}, () => {
+      console.log("Reconnected and sending module action:", action);
+      moduleClient.send("/app/moduleAction", {}, JSON.stringify(action));
+    });
+  }
 };
