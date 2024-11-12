@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import Webcam from 'react-webcam';
 import { useReactMediaRecorder } from 'react-media-recorder';
-import { Video, StopCircle, Save, Trash2, RefreshCcw, Brain } from 'lucide-react';
+import { Video, StopCircle, Save, Trash2, RefreshCcw, Brain ,ArrowLeft} from 'lucide-react';
 import { Progress } from "@/components/shadcn/ui/progress";
 import { Button } from "@/components/shadcn/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/shadcn/ui/select";
@@ -26,6 +26,10 @@ const VideoRecorder: React.FC = () => {
       setRecordingDuration(0);
     },
   });
+
+  const handleBack = () => {
+    window.history.back();
+  };
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -173,6 +177,14 @@ const VideoRecorder: React.FC = () => {
 
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-6">
+      <Button
+        onClick={handleBack}
+        className="bg-white text-black hover:bg-gray-200 shadow-lg rounded-lg px-4 py-2 transition-all duration-200 border border-gray-200"
+      >
+        <ArrowLeft className="w-5 h-5 mr-2" />
+        Back
+      </Button>
+
       {notification && (
         <div className="fixed top-4 right-4 bg-black bg-opacity-80 text-white px-4 py-2 rounded-lg shadow-lg z-50">
           {notification}

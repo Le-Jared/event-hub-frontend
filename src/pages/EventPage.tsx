@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { DragDropContext, Droppable, Draggable, type DropResult } from '@/components/shadcn/ui/dnd';
 import { Card } from '@/components/shadcn/ui/card';
 import { ScrollArea } from '@/components/shadcn/ui/scroll-area';
-import { Video, Image, FileVideo, Radio, MessageSquare, HelpCircle, BarChart } from 'lucide-react';
+import { Video, Image, FileVideo, Radio, MessageSquare, HelpCircle, BarChart, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/shadcn/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/shadcn/ui/select";
 import { useParams, useNavigate } from 'react-router-dom';
@@ -189,13 +189,27 @@ const EventPage: React.FC = () => {
     }
   };
 
+  const handleBack = () => {
+    navigate(-1);
+  };
+
   return (
     <DragDropContext onDragEnd={handleDragEnd}>
       <div className="flex flex-col h-screen bg-gray-900 text-white">
         {/* Stream Status Bar */}
         <div className="bg-gray-800 p-4 shadow-sm">
           <div className="max-w-7xl mx-auto flex justify-between items-center">
-            <LiveIndicator {...streamStatus} />
+            <div className="flex items-center space-x-4">
+              <Button
+                onClick={handleBack}
+                variant="secondary"
+                className="bg-gray-700 hover:bg-gray-600 text-white border border-gray-600"
+              >
+                <ArrowLeft className="w-5 h-5 mr-2" />
+                Back
+              </Button>
+              <LiveIndicator {...streamStatus} />
+            </div>
             <Button
               onClick={handleGoLive}
               variant={streamStatus.isLive ? "destructive" : "default"}
