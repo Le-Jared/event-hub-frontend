@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { DragDropContext, Droppable, Draggable, type DropResult } from '@/components/shadcn/ui/dnd';
 import { Card } from '@/components/shadcn/ui/card';
 import { ScrollArea } from '@/components/shadcn/ui/scroll-area';
-import { Video, Image, FileQuestion, MessageSquare, HelpCircle, BarChart } from 'lucide-react';
+import { Video, Image, FileVideo, Radio, MessageSquare, HelpCircle, BarChart } from 'lucide-react';
 import { Button } from '@/components/shadcn/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/shadcn/ui/select";
 import { useParams, useNavigate } from 'react-router-dom';
@@ -58,7 +58,7 @@ const dummyComponents: ComponentItem[] = [
     id: '3',
     type: 'video',
     title: 'Demo Video',
-    icon: <FileQuestion className="w-6 h-6" />,
+    icon: <FileVideo className="w-6 h-6" />,
     content: 'Demo Video',
     imageUrl: 'https://picsum.photos/400/300?random=3',
     link: '/video'
@@ -66,8 +66,8 @@ const dummyComponents: ComponentItem[] = [
   {
     id: '4',
     type: 'video',
-    title: 'Live Video',
-    icon: <FileQuestion className="w-6 h-6" />,
+    title: 'Live Webcam',
+    icon: <Radio className="w-6 h-6" />,
     content: 'See it Live',
     imageUrl: 'https://picsum.photos/400/300?random=4',
     link: '/live'
