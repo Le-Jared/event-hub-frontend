@@ -32,6 +32,7 @@ import {
   StreamConnection,
 } from "@/utils/messaging-client";
 import { useAppContext } from "@/contexts/AppContext";
+import VideoJSSynced from "@/components/VideoJSSynced";
 
 export interface ComponentItem {
   id: string;
@@ -74,7 +75,7 @@ export const dummyComponents: ComponentItem[] = [
     title: "Demo Video",
     icon: <FileVideo className="w-6 h-6" />,
     content: "Demo Video",
-    imageUrl: `https://picsum.photos/seed/timothy/600/400`,
+    // imageUrl: `https://picsum.photos/seed/timothy/600/400`,
     link: "/record",
   },
   {
@@ -105,6 +106,19 @@ export const dummyComponents: ComponentItem[] = [
     link: "/model",
   },
 ];
+
+export const videoSource =
+  "http://localhost:8080/encoded/steamboatwillie_001/master.m3u8";
+
+const videoJSOptions = {
+  sources: [
+    {
+      // src: data.videoSource,
+      src: videoSource,
+      type: "application/x-mpegURL",
+    },
+  ],
+};
 
 const EventPage: React.FC = () => {
   const { roomId } = useParams<{ roomId: string }>();
@@ -297,6 +311,13 @@ const EventPage: React.FC = () => {
                         !currentComponent.imageUrl && (
                           <div>{currentComponent.htmlContent}</div>
                         )}
+                      {currentComponent.type === "video" && (
+                        <VideoJSSynced
+                          options={videoJSOptions}
+                          roomID={roomId ?? ""}
+                          isHost={true}
+                        />
+                      )}
                       <p className="text-white mb-4">
                         {currentComponent.content}
                       </p>
