@@ -177,6 +177,13 @@ const EventPage: React.FC = () => {
 
   const handleComponentClick = (component: ComponentItem) => {
     setCurrentComponent(component);
+    sendModuleAction({
+      ID: component.id,
+      TYPE: component.type,
+      SESSION_ID: roomId ?? "",
+      SENDER: user?.username ?? "",
+      TIMESTAMP: new Date().toISOString(),
+    });
   };
 
   const handleRedirectToComponent = () => {
