@@ -185,7 +185,7 @@ export const ModuleConnection = (options: ModuleClientOptions) => {
   };
 };
 
-export const sendModuleAction = async (action: ComponentItem) => {
+export const sendModuleAction = async (action: ModuleAction) => {
   if (moduleClient && moduleClient.connected) {
     console.log("Sending module action:", action);
     moduleClient.send("/app/moduleAction", {}, JSON.stringify(action));
