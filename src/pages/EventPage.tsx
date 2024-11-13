@@ -82,25 +82,7 @@ export const dummyComponents: ComponentItem[] = [
     content: "Upload 3D Model",
     imageUrl: `https://picsum.photos/seed/model/600/400`,
     link: "/model",
-  },
-  {
-    id: "4",
-    type: "poll",
-    title: "Create Poll",
-    icon: <BarChart2 className="w-6 h-6" />,
-    content: "Create an interactive poll",
-    imageUrl: `https://picsum.photos/seed/poll/600/400`,
-    link: "/poll",
-  },
-  {
-    id: "5",
-    type: "model",
-    title: "3D Model",
-    icon: <Box className="w-6 h-6" />,
-    content: "Upload 3D Model",
-    imageUrl: `https://picsum.photos/seed/model/600/400`,
-    link: "/model",
-  },
+  }
 ];
 
 const EventPage: React.FC = () => {
