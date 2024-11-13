@@ -6,12 +6,13 @@ import LiveChat from "@/components/LiveChat";
 import Chatbot from "@/components/experimental/ChatBot";
 import LiveIndicator from "./components/LiveIndicator";
 import PollComponent from "./components/PollComponent";
-import { ModuleConnection } from "@/utils/messaging-client";
+import { ModuleConnection, StreamConnection } from "@/utils/messaging-client";
 import { useParams } from "react-router-dom";
 import { dummyComponents, ModuleAction } from "./EventPage";
+import { getStreamStatus } from "@/utils/api-client";
 
 // WebSocket connection
-const WS_URL = "ws://localhost:8080/moduleAction";
+const WS_URL = "http://localhost:8080/streamStatus";
 
 interface ComponentItem {
   id: string;
@@ -29,12 +30,12 @@ interface StreamStatus {
   roomId?: string;
 }
 
-interface WebSocketMessage {
+export interface StatusMessage {
   TYPE: string;
   ID?: string;
-  SENDER?: string;
-  count?: number;
-  data?: any;
+  SESSION_ID?: string;
+  VIEWER_COUNT?: number;
+  IS_LIVE?: any;
 }
 
 const componentIcons: { [key: string]: React.ReactNode } = {
@@ -44,7 +45,6 @@ const componentIcons: { [key: string]: React.ReactNode } = {
 };
 
 const ViewerPage: React.FC = () => {
-  const [socket, setSocket] = useState<WebSocket | null>(null);
   const [currentComponent, setCurrentComponent] =
     useState<ComponentItem | null>(null);
   const [streamStatus, setStreamStatus] = useState<StreamStatus>({
@@ -55,14 +55,15 @@ const ViewerPage: React.FC = () => {
   const roomID = roomId ? roomId.toString() : "";
 
   const handlePollVote = (optionId: number) => {
-    if (socket?.readyState === WebSocket.OPEN) {
-      socket.send(
-        JSON.stringify({
-          type: "POLL_VOTE",
-          optionId: optionId,
-        })
-      );
-    }
+    // if (socket?.readyState === WebSocket.OPEN) {
+    //   socket.send(
+    //     JSON.stringify({
+    //       type: "POLL_VOTE",
+    //       optionId: optionId,
+    //       room: roomID,
+    //     })
+    //   );
+    // }
   };
 
   useEffect(() => {
@@ -77,82 +78,43 @@ const ViewerPage: React.FC = () => {
           setCurrentComponent(component);
         }
       },
+      goLive: (isLive: boolean) => {},
     });
 
     return cleanupWebSocket;
   }, [roomId]);
 
-  const handleWebSocketMessage = (data: WebSocketMessage) => {
-    switch (data.TYPE) {
-      case "COMPONENT_CHANGE":
-        if (data.ID && data.SENDER) {
-          setCurrentComponent({
-            id: data.ID,
-            type: data.TYPE,
-            title: `Component from ${data.SENDER}`,
-            icon: componentIcons[data.TYPE] || (
-              <FileQuestion className="w-6 h-6" />
-            ),
-            content: `Content for ${data.TYPE}`,
-          });
-        }
-        break;
-      case "VIEWER_COUNT":
-        setStreamStatus((prev) => ({
-          ...prev,
-          viewerCount: data.count || 0,
-        }));
-        break;
-      case "POLL_UPDATE":
-        break;
-      default:
-        break;
-    }
-  };
-
   useEffect(() => {
-    const ws = new WebSocket(WS_URL);
-
-    ws.onopen = () => {
-      console.log("Connected to WebSocket");
-      setStreamStatus((prev) => ({ ...prev, isLive: true }));
-      // Join the room as a viewer
-      ws.send(
-        JSON.stringify({
-          type: "JOIN_ROOM",
-          role: "viewer",
-        })
-      );
-    };
-
-    ws.onerror = (error) => {
-      console.error("WebSocket error:", error);
-      setStreamStatus((prev) => ({ ...prev, isLive: false }));
-    };
-
-    ws.onmessage = (event) => {
+    const fetchStreamData = async () => {
       try {
-        const data = JSON.parse(event.data);
-        console.log(event.data, "received");
-        handleWebSocketMessage(data);
+        const currentStatus = await getStreamStatus(roomID);
+        setStreamStatus({
+          isLive: currentStatus.isLive,
+          viewerCount: currentStatus.viewerCount,
+          roomId: roomID,
+        });
       } catch (error) {
-        console.error("Error parsing WebSocket message:", error);
+        console.error("Error fetching stream data:", error);
       }
-    };
 
-    ws.onclose = () => {
-      console.log("Disconnected from WebSocket");
-      setStreamStatus({ isLive: false, viewerCount: 0 });
+      const cleanupStreamWebSocket = StreamConnection({
+        roomID: roomId ?? "",
+        onReceived: (status) => {
+          console.log("Received StatusMessage:", status);
+          if (status.TYPE === "START_STREAM") {
+            setStreamStatus((prev) => ({ ...prev, isLive: true }));
+          } else if (status.TYPE === "STOP_STREAM") {
+            setStreamStatus((prev) => ({ ...prev, isLive: false }));
+          }
+        },
+      });
+      return () => {
+        cleanupStreamWebSocket();
+      };
     };
-
-    setSocket(ws);
-
-    return () => {
-      if (ws && ws.readyState === WebSocket.OPEN) {
-        ws.close();
-      }
-    };
-  }, []);
+    fetchStreamData();
+    // return cleanupStreamWebSocket;
+  }, [roomId]);
 
   return (
     <div className="flex flex-col h-screen bg-gray-900 text-white">
@@ -182,9 +144,7 @@ const ViewerPage: React.FC = () => {
                   />
                 )}
                 {currentComponent.htmlContent && !currentComponent.imageUrl && (
-                  <div>
-                    {currentComponent.htmlContent}
-                  </div>
+                  <div>{currentComponent.htmlContent}</div>
                 )}
                 {/* <p className="text-white">{currentComponent.content}</p> */}
               </div>
