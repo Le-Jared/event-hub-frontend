@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import LiveChat from "@/components/LiveChat";
 import LiveIndicator from "./components/LiveIndicator";
+import VideoRecorder from "./VideoRecorder";
 import {
   Dialog,
   DialogContent,
@@ -36,6 +37,7 @@ export interface ComponentItem {
   icon: React.ReactNode;
   content: string;
   imageUrl?: string;
+  htmlContent?: any;
   link: string;
 }
 
@@ -74,12 +76,12 @@ export const dummyComponents: ComponentItem[] = [
   },
   {
     id: "3",
-    type: "video",
+    type: "live-webcam",
     title: "Live Webcam",
     icon: <Radio className="w-6 h-6" />,
     content: "See it Live",
-    imageUrl: `https://picsum.photos/seed/streamhub/600/400`,
     link: "/live",
+    htmlContent: <VideoRecorder viewOnly/>
   },
   {
     id: "4",
@@ -98,7 +100,7 @@ export const dummyComponents: ComponentItem[] = [
     content: "Upload 3D Model",
     imageUrl: `https://picsum.photos/seed/model/600/400`,
     link: "/model",
-  },
+  }
 ];
 
 const EventPage: React.FC = () => {
@@ -160,6 +162,7 @@ const EventPage: React.FC = () => {
 
     const component = components.find((item) => item.id === action.ID);
     if (component) {
+      
       setCurrentComponent(component);
     }
   };
@@ -283,12 +286,17 @@ const EventPage: React.FC = () => {
                       <h2 className="text-xl font-semibold mb-4">
                         {currentComponent.title}
                       </h2>
-                      {currentComponent.imageUrl && (
+                      {!currentComponent.htmlContent && currentComponent.imageUrl && (
                         <img
                           src={currentComponent.imageUrl}
                           alt={currentComponent.title}
                           className="mx-auto mb-4 rounded-lg shadow-md w-full h-[400px] object-cover"
                         />
+                      )}
+                       {currentComponent.htmlContent &&  !currentComponent.imageUrl && (
+                        <div>
+                         {currentComponent.htmlContent}
+                        </div>
                       )}
                       <p className="text-white mb-4">
                         {currentComponent.content}
