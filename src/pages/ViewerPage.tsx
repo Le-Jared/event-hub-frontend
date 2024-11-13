@@ -21,6 +21,7 @@ interface ComponentItem {
   icon: React.ReactNode;
   content: string;
   imageUrl?: string;
+  htmlContent?: any;
 }
 
 interface StreamStatus {
@@ -54,15 +55,15 @@ const ViewerPage: React.FC = () => {
   const roomID = roomId ? roomId.toString() : "";
 
   const handlePollVote = (optionId: number) => {
-    if (socket?.readyState === WebSocket.OPEN) {
-      socket.send(
-        JSON.stringify({
-          type: "POLL_VOTE",
-          optionId: optionId,
-          room: roomID,
-        })
-      );
-    }
+    // if (socket?.readyState === WebSocket.OPEN) {
+    //   socket.send(
+    //     JSON.stringify({
+    //       type: "POLL_VOTE",
+    //       optionId: optionId,
+    //       room: roomID,
+    //     })
+    //   );
+    // }
   };
 
   useEffect(() => {
@@ -93,8 +94,9 @@ const ViewerPage: React.FC = () => {
           roomId: roomID,
         });
       } catch (error) {
-        console.error("Error fetching past messages:", error);
+        console.error("Error fetching stream data:", error);
       }
+
       const cleanupStreamWebSocket = StreamConnection({
         roomID: roomId ?? "",
         onReceived: (status) => {
@@ -111,7 +113,6 @@ const ViewerPage: React.FC = () => {
       };
     };
     fetchStreamData();
-
     // return cleanupStreamWebSocket;
   }, [roomId]);
 
@@ -135,12 +136,15 @@ const ViewerPage: React.FC = () => {
                 {/* <h2 className="text-xl font-semibold mb-4">
                   {currentComponent.title}
                 </h2> */}
-                {currentComponent.imageUrl && (
+                {currentComponent.imageUrl && !currentComponent.htmlContent && (
                   <img
                     src={currentComponent.imageUrl}
                     alt={currentComponent.title}
                     className="mx-auto mb-4 rounded-lg shadow-md"
                   />
+                )}
+                {currentComponent.htmlContent && !currentComponent.imageUrl && (
+                  <div>{currentComponent.htmlContent}</div>
                 )}
                 {/* <p className="text-white">{currentComponent.content}</p> */}
               </div>
