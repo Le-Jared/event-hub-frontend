@@ -3,6 +3,7 @@ import { RegisterFormData } from "../pages/host/HostRegisterPage.tsx";
 import axios from "axios";
 import { User } from "@/utils/types";
 import { CreateEventFormData } from "@/pages/host/HostCreateEvent.tsx";
+import { StatusMessage } from "@/pages/ViewerPage.tsx";
 
 const API_BASE_URL = "http://localhost:8080";
 
@@ -241,3 +242,19 @@ export const getEvents = async (accountID: string) => {
   return response;
 };
 
+export const getStreamStatus = async (
+  roomId: string
+): Promise<StatusMessage> => {
+  try {
+    const response = await axios.get(
+      `${API_BASE_URL}/api/streamStatus/${roomId}`,
+      {
+        withCredentials: true,
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching stream status information:", error);
+    throw error;
+  }
+};

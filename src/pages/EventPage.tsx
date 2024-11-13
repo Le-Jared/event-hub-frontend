@@ -121,7 +121,7 @@ const EventPage: React.FC = () => {
 
   useEffect(() => {
     const cleanupWebSocket = ModuleConnection({
-      roomID: roomId,
+      roomID: roomId ?? "",
       onReceived: (action: ModuleAction) => {
         console.log("Received ModuleAction:", action);
         const component = dummyComponents.find(
@@ -141,7 +141,7 @@ const EventPage: React.FC = () => {
 
   useEffect(() => {
     const cleanupStreamWebSocket = StreamConnection({
-      roomID: roomId,
+      roomID: roomId ?? "",
       onReceived: (status) => {
         console.log("Received StatusMessage:", status);
         if (status.TYPE === "VIEWER_JOIN") {
