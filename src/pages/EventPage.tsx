@@ -274,17 +274,16 @@ const EventPage: React.FC = () => {
 
           {/* Right Sidebar */}
           <div className="flex-1 bg-gray-800 shadow-lg flex flex-col">
-            {/* Components Panel */}
-            <div className="flex-1 p-4 overflow-hidden">
+            {/* Components Panel - 50% */}
+            <div className="h-[50%] p-4 overflow-hidden">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-lg font-semibold">Components</h2>
                 <Button onClick={() => setIsAddDialogOpen(true)} size="sm">
                   <Plus className="w-4 h-4 mr-2" />
                   Add
                 </Button>
-                {/* Dialog remains the same */}
               </div>
-              <ScrollArea className="h-[calc(100vh-400px)]">
+              <ScrollArea className="h-[calc(100%-3rem)]">
                 <Droppable droppableId="components">
                   {(provided) => (
                     <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-2">
@@ -294,7 +293,7 @@ const EventPage: React.FC = () => {
                             <Card
                               ref={provided.innerRef}
                               {...provided.draggableProps}
-                              className={`p-4 cursor-pointer bg-gray-700 hover:bg-gray-600 relative ${
+                              className={`p-2 cursor-pointer bg-gray-700 hover:bg-gray-600 relative ${
                                 snapshot.isDragging ? 'opacity-50' : ''
                               }`}
                               onClick={() => handleComponentClick(item)}
@@ -306,7 +305,6 @@ const EventPage: React.FC = () => {
                                 {item.icon}
                                 <div className="flex-1 ml-3">
                                   <h3 className="font-medium text-white">{item.title}</h3>
-                                  <p className="text-sm text-gray-300">{item.type}</p>
                                 </div>
                                 <Button
                                   size="sm"
@@ -341,11 +339,12 @@ const EventPage: React.FC = () => {
                 </Droppable>
               </ScrollArea>
             </div>
-           {/* Chat Component */}
-           <div className="h-[600px] p-4 border-t border-gray-700">
-            <Card className="h-[calc(100%-2rem)] overflow-y-auto bg-gray-700 text-white">
-              <LiveChat />
-            </Card>
+
+            {/* Chat Component - 50% */}
+            <div className="h-[50%] p-2 border-t border-gray-700">
+              <Card className="h-[calc(100%)] overflow-y-auto bg-gray-700 text-white">
+                <LiveChat />
+              </Card>
             </div>
           </div>
         </div>
