@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import SockJS from "sockjs-client";
-import { Stomp } from "@stomp/stompjs";
 import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 import { Card } from "@/components/shadcn/ui/card";
 import { ScrollArea } from "@/components/shadcn/ui/scroll-area";
@@ -26,7 +24,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/shadcn/ui/dialog";
-import { sendModuleAction } from "@/utils/messaging-client";
+import {
+  ModuleConnection,
+  sendModuleAction,
+  sendStreamStatus,
+  StreamConnection,
+} from "@/utils/messaging-client";
 import { useAppContext } from "@/contexts/AppContext";
 
 export interface ComponentItem {
@@ -104,7 +107,6 @@ export const dummyComponents: ComponentItem[] = [
 const EventPage: React.FC = () => {
   const { roomId } = useParams<{ roomId: string }>();
   const navigate = useNavigate();
-  const [stompClient, setStompClient] = useState<any>(null);
   const [currentComponent, setCurrentComponent] =
     useState<ComponentItem | null>(null);
   const [components, setComponents] =
@@ -118,61 +120,59 @@ const EventPage: React.FC = () => {
   const { user } = useAppContext();
 
   useEffect(() => {
-    const connectWebSocket = () => {
-      const socket = new SockJS("http://localhost:8080/moduleAction");
-      const stomp = Stomp.over(socket);
-
-      stomp.connect(
-        {},
-        () => {
-          console.log("Connected to WebSocket");
-          setStreamStatus((prev) => ({ ...prev, isLive: true }));
-
-          stomp.subscribe(`/topic/moduleAction/${roomId}`, (message) => {
-            try {
-              const action: ModuleAction = JSON.parse(message.body);
-              handleModuleAction(action);
-            } catch (error) {
-              console.error("Error parsing message:", error);
-            }
-          });
-
-          setStompClient(stomp);
-        },
-        (error: any) => {
-          console.error("WebSocket connection error:", error);
-          setStreamStatus((prev) => ({ ...prev, isLive: false }));
+    const cleanupWebSocket = ModuleConnection({
+      roomID: roomId,
+      onReceived: (action: ModuleAction) => {
+        console.log("Received ModuleAction:", action);
+        const component = dummyComponents.find(
+          (component) => component.id === action.ID
+        );
+        if (component) {
+          setCurrentComponent(component);
         }
-      );
-    };
+      },
+      goLive: (isLive: boolean) => {
+        setStreamStatus((prev) => ({ ...prev, isLive }));
+      },
+    });
 
-    connectWebSocket();
-
-    return () => {
-      if (stompClient) {
-        stompClient.disconnect();
-      }
-    };
+    return cleanupWebSocket;
   }, [roomId]);
 
-  const handleModuleAction = (action: ModuleAction) => {
-    console.log("Received module action:", action);
+  useEffect(() => {
+    const cleanupStreamWebSocket = StreamConnection({
+      roomID: roomId,
+      onReceived: (status) => {
+        console.log("Received StatusMessage:", status);
+        if (status.TYPE === "VIEWER_JOIN") {
+          setStreamStatus((prev) => ({
+            ...prev,
+            viewerCount: status.VIEWER_COUNT || 0,
+          }));
+        } else if (status.TYPE === "VIEWER_LEAVE") {
+          setStreamStatus((prev) => ({
+            ...prev,
+            viewerCount: status.VIEWER_COUNT || 0,
+          }));
+        } else if (status.TYPE === "START_STREAM") {
+          setStreamStatus((prev) => ({ ...prev, isLive: true }));
+        } else if (status.TYPE === "STOP_STREAM") {
+          setStreamStatus((prev) => ({ ...prev, isLive: false }));
+        }
+      },
+    });
 
-    const component = components.find((item) => item.id === action.ID);
-    if (component) {
-      setCurrentComponent(component);
-    }
-  };
+    return cleanupStreamWebSocket;
+  }, [roomId]);
 
   const handleGoLive = () => {
-    if (!streamStatus.isLive && stompClient) {
-      setStreamStatus((prev) => ({ ...prev, isLive: true }));
-    } else {
-      setStreamStatus((prev) => ({ ...prev, isLive: false }));
-      if (stompClient) {
-        stompClient.disconnect();
-      }
-    }
+    const newStatus = !streamStatus.isLive;
+    setStreamStatus((prev) => ({ ...prev, isLive: newStatus }));
+    sendStreamStatus({
+      TYPE: newStatus ? "START_STREAM" : "STOP_STREAM",
+      SESSION_ID: roomId,
+      IS_LIVE: newStatus,
+    });
   };
 
   const handleComponentClick = (component: ComponentItem) => {
@@ -199,8 +199,8 @@ const EventPage: React.FC = () => {
       sendModuleAction({
         ID: draggedComponent.id,
         TYPE: draggedComponent.type,
-        SESSION_ID: roomId,
-        SENDER: user.username,
+        SESSION_ID: roomId ?? "",
+        SENDER: user?.username ?? "",
         TIMESTAMP: new Date().toISOString(),
       });
       return;
