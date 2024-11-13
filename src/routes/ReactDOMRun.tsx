@@ -54,7 +54,7 @@ const router = createBrowserRouter([
       },
       {
         path: "record",
-        element: <Record />,
+        element: <Record viewOnly={false}/>,
       },
       {
         path: "host/create",

@@ -30,6 +30,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import SockJS from "sockjs-client";
 import { Stomp } from "@stomp/stompjs";
 import LiveIndicator from "./components/LiveIndicator";
+import VideoRecorder from "./VideoRecorder";
 
 export interface ComponentItem {
   id: string;
@@ -38,6 +39,7 @@ export interface ComponentItem {
   icon: React.ReactNode;
   content: string;
   imageUrl?: string;
+  htmlContent?: any;
   link: string;
 }
 
@@ -85,12 +87,12 @@ export const dummyComponents: ComponentItem[] = [
   },
   {
     id: "4",
-    type: "video",
+    type: "live-webcam",
     title: "Live Webcam",
     icon: <Radio className="w-6 h-6" />,
     content: "See it Live",
-    imageUrl: `https://picsum.photos/seed/streamhub/600/400`,
     link: "/live",
+    htmlContent: <VideoRecorder viewOnly/>
   },
 ];
 
@@ -154,6 +156,7 @@ const EventPage: React.FC = () => {
 
     const component = components.find((item) => item.id === action.ID);
     if (component) {
+      
       setCurrentComponent(component);
     }
   };
@@ -269,12 +272,17 @@ const EventPage: React.FC = () => {
                       <h2 className="text-xl font-semibold mb-4">
                         {currentComponent.title}
                       </h2>
-                      {currentComponent.imageUrl && (
+                      {!currentComponent.htmlContent && currentComponent.imageUrl && (
                         <img
                           src={currentComponent.imageUrl}
                           alt={currentComponent.title}
                           className="mx-auto mb-4 rounded-lg shadow-md w-full h-[400px]"
                         />
+                      )}
+                       {currentComponent.htmlContent &&  !currentComponent.imageUrl && (
+                        <div>
+                         {currentComponent.htmlContent}
+                        </div>
                       )}
                       <p className="text-white">{currentComponent.content}</p>
                     </div>

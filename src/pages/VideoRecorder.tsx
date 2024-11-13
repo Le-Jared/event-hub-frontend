@@ -7,7 +7,11 @@ import { Button } from "@/components/shadcn/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/shadcn/ui/select";
 import * as faceapi from 'face-api.js';
 
-const VideoRecorder: React.FC = () => {
+interface VideoRecorderProps {
+  viewOnly: boolean
+}
+
+const VideoRecorder: React.FC<VideoRecorderProps> = ({viewOnly}: VideoRecorderProps) => {
   const webcamRef = useRef<Webcam>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [recordedVideoUrl, setRecordedVideoUrl] = useState<string | null>(null);
@@ -177,13 +181,15 @@ const VideoRecorder: React.FC = () => {
 
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-6">
-      <Button
-        onClick={handleBack}
-        className="bg-white text-black hover:bg-gray-200 shadow-lg rounded-lg px-4 py-2 transition-all duration-200 border border-gray-200"
-      >
-        <ArrowLeft className="w-5 h-5 mr-2" />
-        Back
+      {!viewOnly &&
+        <Button
+          onClick={handleBack}
+          className="bg-white text-black hover:bg-gray-200 shadow-lg rounded-lg px-4 py-2 transition-all duration-200 border border-gray-200"
+        >
+          <ArrowLeft className="w-5 h-5 mr-2" />
+          Back
       </Button>
+      }
 
       {notification && (
         <div className="fixed top-4 right-4 bg-black bg-opacity-80 text-white px-4 py-2 rounded-lg shadow-lg z-50">
@@ -204,96 +210,100 @@ const VideoRecorder: React.FC = () => {
             ref={canvasRef}
             className="absolute top-0 left-0 w-full h-full"
           />
-          {isRecording && (
+          {!viewOnly && isRecording && (
             <div className="absolute top-4 right-4 bg-red-500 text-white px-3 py-1 rounded-full flex items-center space-x-2">
               <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
               <span>{formatTime(recordingDuration)}</span>
             </div>
           )}
-          {isMLActive && mlResult && (
+          {!viewOnly && isMLActive && mlResult && (
             <div className="absolute bottom-4 left-4 bg-black bg-opacity-70 text-white px-3 py-1 rounded-lg">
               {mlResult}
             </div>
           )}
         </div>
 
-        {isRecording && (
+        {!viewOnly && isRecording && (
           <Progress value={recordingDuration % 60 * (100/60)} className="w-full" />
         )}
 
-        <div className="flex flex-wrap gap-4 justify-center">
-          {!isRecording ? (
-            <Button 
-              onClick={handleStartRecording} 
-              disabled={status === 'recording'}
-              className="bg-blue-500 hover:bg-blue-600 text-white"
-            >
-              <Video className="w-5 h-5 mr-2" /> 
-              Start Recording
-            </Button>
-          ) : (
-            <Button 
-              onClick={handleStopRecording} 
-              className="bg-red-500 hover:bg-red-600 text-white"
-            >
-              <StopCircle className="w-5 h-5 mr-2" /> 
-              Stop Recording
-            </Button>
-          )}
-          
-          <Button 
-            onClick={saveVideo} 
-            disabled={!recordedVideoUrl}
-            className="bg-green-500 hover:bg-green-600 text-white"
-          >
-            <Save className="w-5 h-5 mr-2" /> 
-            Save Video
-          </Button>
-
-          {recordedVideoUrl && (
-            <>
+        {!viewOnly && 
+          <div className="flex flex-wrap gap-4 justify-center">
+            {!isRecording ? (
               <Button 
-                onClick={deleteVideo}
+                onClick={handleStartRecording} 
+                disabled={status === 'recording'}
+                className="bg-blue-500 hover:bg-blue-600 text-white"
+              >
+                <Video className="w-5 h-5 mr-2" /> 
+                Start Recording
+              </Button>
+            ) : (
+              <Button 
+                onClick={handleStopRecording} 
                 className="bg-red-500 hover:bg-red-600 text-white"
               >
-                <Trash2 className="w-5 h-5 mr-2" /> 
-                Delete Video
+                <StopCircle className="w-5 h-5 mr-2" /> 
+                Stop Recording
               </Button>
-              <Button 
-                onClick={() => {
-                  setRecordedVideoUrl(null);
-                  handleStartRecording();
-                }}
-                className="border border-gray-300 hover:bg-gray-100"
+            )}
+            
+            <Button 
+              onClick={saveVideo} 
+              disabled={!recordedVideoUrl}
+              className="bg-green-500 hover:bg-green-600 text-white"
+            >
+              <Save className="w-5 h-5 mr-2" /> 
+              Save Video
+            </Button>
+
+            {!viewOnly && recordedVideoUrl && (
+              <>
+                <Button 
+                  onClick={deleteVideo}
+                  className="bg-red-500 hover:bg-red-600 text-white"
+                >
+                  <Trash2 className="w-5 h-5 mr-2" /> 
+                  Delete Video
+                </Button>
+                <Button 
+                  onClick={() => {
+                    setRecordedVideoUrl(null);
+                    handleStartRecording();
+                  }}
+                  className="border border-gray-300 hover:bg-gray-100"
+                >
+                  <RefreshCcw className="w-5 h-5 mr-2" /> 
+                  Record New
+                </Button>
+              </>
+            )}
+            
+            {!viewOnly && 
+              <Button
+                onClick={() => setIsMLActive(!isMLActive)}
+                className={`${isMLActive ? 'bg-purple-500 hover:bg-purple-600' : 'bg-gray-500 hover:bg-gray-600'} text-white`}
               >
-                <RefreshCcw className="w-5 h-5 mr-2" /> 
-                Record New
+                <Brain className="w-5 h-5 mr-2" />
+                {isMLActive ? 'Disable ML' : 'Enable ML'}
               </Button>
-            </>
-          )}
+            } 
 
-          <Button
-            onClick={() => setIsMLActive(!isMLActive)}
-            className={`${isMLActive ? 'bg-purple-500 hover:bg-purple-600' : 'bg-gray-500 hover:bg-gray-600'} text-white`}
-          >
-            <Brain className="w-5 h-5 mr-2" />
-            {isMLActive ? 'Disable ML' : 'Enable ML'}
-          </Button>
+            {!viewOnly && isMLActive && (
+              <Select value={mlMode} onValueChange={(value: 'expression' | 'age-gender') => setMlMode(value)}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Select ML mode" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="expression">Expression</SelectItem>
+                  <SelectItem value="age-gender">Age & Gender</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
+          </div>
+        }
 
-          {isMLActive && (
-            <Select value={mlMode} onValueChange={(value: 'expression' | 'age-gender') => setMlMode(value)}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Select ML mode" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="expression">Expression</SelectItem>
-                <SelectItem value="age-gender">Age & Gender</SelectItem>
-              </SelectContent>
-            </Select>
-          )}
-        </div>
-
-        {recordedVideoUrl && (
+        {!viewOnly && recordedVideoUrl && (
           <div className="mt-6">
             <h3 className="text-lg font-semibold mb-4">Preview</h3>
             <video 
