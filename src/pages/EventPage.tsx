@@ -181,12 +181,13 @@ const EventPage: React.FC = () => {
     }
   };
 
-  const handleAddComponent = (newComponent: ComponentItem) => {
-    const updatedComponents = [...components, newComponent];
-    setComponents(updatedComponents);
+  const handleAddComponent = (componentToAdd: ComponentItem) => {
+    const newId = (components.length + 1).toString();
+    const newComponent = { ...componentToAdd, id: newId };
+    setComponents([...components, newComponent]);
     setCurrentComponent(newComponent);
     setIsAddDialogOpen(false);
-  };
+  };  
 
   const handleDeleteComponent = (id: string) => {
     const updatedComponents = components.filter(component => component.id !== id);
@@ -220,7 +221,7 @@ const EventPage: React.FC = () => {
           </div>
         </div>
       </div>
-
+  
       {/* Main Content */}
       <DragDropContext onDragEnd={handleDragEnd}>
         <div className="flex flex-1 overflow-hidden">
@@ -271,19 +272,39 @@ const EventPage: React.FC = () => {
               )}
             </Droppable>
           </div>
-
-          {/* Right Sidebar */}
-          <div className="flex-1 bg-gray-800 shadow-lg flex flex-col">
-            {/* Components Panel - 50% */}
-            <div className="h-[50%] p-4 overflow-hidden">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-lg font-semibold">Components</h2>
-                <Button onClick={() => setIsAddDialogOpen(true)} size="sm">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add
-                </Button>
-              </div>
-              <ScrollArea className="h-[calc(100%-3rem)]">
+        {/* Right Sidebar */}
+        <div className="flex-1 bg-gray-800 shadow-lg flex flex-col">
+          <div className="h-[50%] p-2 overflow-hidden">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-lg font-semibold">Components</h2>
+              <Button onClick={() => setIsAddDialogOpen(true)} size="sm">
+                <Plus className="w-4 h-4 mr-2" />
+                Add
+              </Button>
+              <Dialog open={isAddDialogOpen} onClose={() => setIsAddDialogOpen(false)}>
+                <DialogHeader>
+                  <DialogTitle>Add New Component</DialogTitle>
+                </DialogHeader>
+                <DialogContent>
+                  <div className="grid gap-4 py-4">
+                    {dummyComponents.map((component) => (
+                      <Button
+                        key={component.id}
+                        onClick={() => {
+                          handleAddComponent(component);
+                          setIsAddDialogOpen(false);
+                        }}
+                        className="flex items-center justify-start"
+                      >
+                        {component.icon}
+                        <span className="ml-2">{component.title}</span>
+                      </Button>
+                    ))}
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
+              <ScrollArea className="h-[calc(100%-2rem)]">
                 <Droppable droppableId="components">
                   {(provided) => (
                     <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-2">
@@ -339,8 +360,7 @@ const EventPage: React.FC = () => {
                 </Droppable>
               </ScrollArea>
             </div>
-
-            {/* Chat Component - 50% */}
+            {/* Chat Component */}
             <div className="h-[50%] p-2 border-t border-gray-700">
               <Card className="h-[calc(100%)] overflow-y-auto bg-gray-700 text-white">
                 <LiveChat />
@@ -350,7 +370,7 @@ const EventPage: React.FC = () => {
         </div>
       </DragDropContext>
     </div>
-  );
+  );  
 };
 
 export default EventPage;
