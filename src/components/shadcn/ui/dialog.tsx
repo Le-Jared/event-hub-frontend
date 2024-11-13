@@ -10,10 +10,13 @@ export const Dialog: React.FC<DialogProps> = ({ open, onClose, children }) => {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-      <div className="bg-white p-6 rounded-lg max-w-md w-full">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-gray-800 p-6 rounded-lg max-w-md w-full text-white">
         <div className="flex justify-end">
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+          <button 
+            onClick={onClose} 
+            className="text-gray-400 hover:text-gray-200 text-2xl font-bold"
+          >
             &times;
           </button>
         </div>
@@ -24,18 +27,16 @@ export const Dialog: React.FC<DialogProps> = ({ open, onClose, children }) => {
 };
 
 export const DialogContent: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <div>{children}</div>
+  <div className="mt-2">{children}</div>
 );
 
 export const DialogHeader: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <div className="mb-4">{children}</div>
 );
 
-interface DialogTitleProps {
-  children: React.ReactNode;
-  className?: string;
-}
-
-export const DialogTitle: React.FC<DialogTitleProps> = ({ children, className = '' }) => (
-  <h2 className={`text-xl font-bold ${className}`}>{children}</h2>
+export const DialogTitle: React.FC<{ children: React.ReactNode; className?: string }> = ({ 
+  children, 
+  className = '' 
+}) => (
+  <h2 className={`text-xl font-bold text-white ${className}`}>{children}</h2>
 );
