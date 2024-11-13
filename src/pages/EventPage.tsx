@@ -2,14 +2,30 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import SockJS from "sockjs-client";
 import { Stomp } from "@stomp/stompjs";
-import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
+import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 import { Card } from "@/components/shadcn/ui/card";
 import { ScrollArea } from "@/components/shadcn/ui/scroll-area";
 import { Button } from "@/components/shadcn/ui/button";
-import { BarChart2, Box, Image, FileVideo, Radio, ArrowLeft, Plus, ExternalLink, Trash2, GripVertical } from "lucide-react";
+import {
+  BarChart2,
+  Box,
+  Image,
+  FileVideo,
+  Radio,
+  ArrowLeft,
+  Plus,
+  ExternalLink,
+  Trash2,
+  GripVertical,
+} from "lucide-react";
 import LiveChat from "@/components/LiveChat";
 import LiveIndicator from "./components/LiveIndicator";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/shadcn/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/shadcn/ui/dialog";
 
 export interface ComponentItem {
   id: string;
@@ -87,9 +103,15 @@ const EventPage: React.FC = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
   const navigate = useNavigate();
   const [stompClient, setStompClient] = useState<any>(null);
-  const [currentComponent, setCurrentComponent] = useState<ComponentItem | null>(null);
-  const [components, setComponents] = useState<ComponentItem[]>(dummyComponents);
-  const [streamStatus, setStreamStatus] = useState<StreamStatus>({isLive: false, viewerCount: 0, sessionId: sessionId,});
+  const [currentComponent, setCurrentComponent] =
+    useState<ComponentItem | null>(null);
+  const [components, setComponents] =
+    useState<ComponentItem[]>(dummyComponents);
+  const [streamStatus, setStreamStatus] = useState<StreamStatus>({
+    isLive: false,
+    viewerCount: 0,
+    sessionId: sessionId,
+  });
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
 
   useEffect(() => {
@@ -168,12 +190,12 @@ const EventPage: React.FC = () => {
     if (!result.destination) {
       return;
     }
-    if (result.destination.droppableId === 'main-stage') {
+    if (result.destination.droppableId === "main-stage") {
       const draggedComponent = components[result.source.index];
       setCurrentComponent(draggedComponent);
       return;
     }
-    if (result.destination.droppableId === 'components') {
+    if (result.destination.droppableId === "components") {
       const items = Array.from(components);
       const [reorderedItem] = items.splice(result.source.index, 1);
       items.splice(result.destination.index, 0, reorderedItem);
@@ -189,7 +211,9 @@ const EventPage: React.FC = () => {
   };
 
   const handleDeleteComponent = (id: string) => {
-    const updatedComponents = components.filter(component => component.id !== id);
+    const updatedComponents = components.filter(
+      (component) => component.id !== id
+    );
     setComponents(updatedComponents);
     if (currentComponent && currentComponent.id === id) {
       setCurrentComponent(updatedComponents[0] || null);
@@ -228,11 +252,11 @@ const EventPage: React.FC = () => {
           <div className="flex-[3] p-6">
             <Droppable droppableId="main-stage">
               {(provided, snapshot) => (
-                <Card 
+                <Card
                   ref={provided.innerRef}
                   {...provided.droppableProps}
                   className={`h-full flex items-center justify-center bg-gray-800 transition-colors ${
-                    snapshot.isDraggingOver ? 'border-2 border-blue-500' : ''
+                    snapshot.isDraggingOver ? "border-2 border-blue-500" : ""
                   }`}
                 >
                   {currentComponent ? (
@@ -248,7 +272,9 @@ const EventPage: React.FC = () => {
                           className="mx-auto mb-4 rounded-lg shadow-md w-full h-[400px] object-cover"
                         />
                       )}
-                      <p className="text-white mb-4">{currentComponent.content}</p>
+                      <p className="text-white mb-4">
+                        {currentComponent.content}
+                      </p>
                       <Button
                         onClick={handleRedirectToComponent}
                         className="absolute top-4 right-4"
@@ -257,13 +283,14 @@ const EventPage: React.FC = () => {
                       </Button>
                     </div>
                   ) : (
-                    <div className={`text-gray-400 text-center ${
-                      snapshot.isDraggingOver ? 'text-blue-400' : ''
-                    }`}>
-                      {snapshot.isDraggingOver 
+                    <div
+                      className={`text-gray-400 text-center ${
+                        snapshot.isDraggingOver ? "text-blue-400" : ""
+                      }`}
+                    >
+                      {snapshot.isDraggingOver
                         ? "Drop component here"
-                        : "Drag a component here or select from the sidebar"
-                      }
+                        : "Drag a component here or select from the sidebar"}
                     </div>
                   )}
                   {provided.placeholder}
@@ -287,26 +314,41 @@ const EventPage: React.FC = () => {
               <ScrollArea className="h-[calc(100vh-400px)]">
                 <Droppable droppableId="components">
                   {(provided) => (
-                    <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-2">
+                    <div
+                      {...provided.droppableProps}
+                      ref={provided.innerRef}
+                      className="space-y-2"
+                    >
                       {components.map((item, index) => (
-                        <Draggable key={item.id} draggableId={item.id} index={index}>
+                        <Draggable
+                          key={item.id}
+                          draggableId={item.id}
+                          index={index}
+                        >
                           {(provided, snapshot) => (
                             <Card
                               ref={provided.innerRef}
                               {...provided.draggableProps}
                               className={`p-4 cursor-pointer bg-gray-700 hover:bg-gray-600 relative ${
-                                snapshot.isDragging ? 'opacity-50' : ''
+                                snapshot.isDragging ? "opacity-50" : ""
                               }`}
                               onClick={() => handleComponentClick(item)}
                             >
                               <div className="flex items-center">
-                                <div {...provided.dragHandleProps} className="mr-2">
+                                <div
+                                  {...provided.dragHandleProps}
+                                  className="mr-2"
+                                >
                                   <GripVertical className="w-4 h-4" />
                                 </div>
                                 {item.icon}
                                 <div className="flex-1 ml-3">
-                                  <h3 className="font-medium text-white">{item.title}</h3>
-                                  <p className="text-sm text-gray-300">{item.type}</p>
+                                  <h3 className="font-medium text-white">
+                                    {item.title}
+                                  </h3>
+                                  <p className="text-sm text-gray-300">
+                                    {item.type}
+                                  </p>
                                 </div>
                                 <Button
                                   size="sm"
@@ -341,11 +383,11 @@ const EventPage: React.FC = () => {
                 </Droppable>
               </ScrollArea>
             </div>
-           {/* Chat Component */}
-           <div className="h-[600px] p-4 border-t border-gray-700">
-            <Card className="h-[calc(100%-2rem)] overflow-y-auto bg-gray-700 text-white">
-              <LiveChat />
-            </Card>
+            {/* Chat Component */}
+            <div className="h-[600px] p-4 border-t border-gray-700">
+              <Card className="h-[calc(100%-2rem)] overflow-y-auto bg-gray-700 text-white">
+                <LiveChat />
+              </Card>
             </div>
           </div>
         </div>
