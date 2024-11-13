@@ -8,8 +8,9 @@ import LiveIndicator from "./components/LiveIndicator";
 import PollComponent from "./components/PollComponent";
 import { ModuleConnection, StreamConnection } from "@/utils/messaging-client";
 import { useParams } from "react-router-dom";
-import { dummyComponents, ModuleAction } from "./EventPage";
+import { dummyComponents, ModuleAction, videoSource } from "./EventPage";
 import { getStreamStatus } from "@/utils/api-client";
+import VideoJSSynced from "@/components/VideoJSSynced";
 
 // WebSocket connection
 const WS_URL = "http://localhost:8080/streamStatus";
@@ -116,6 +117,16 @@ const ViewerPage: React.FC = () => {
     // return cleanupStreamWebSocket;
   }, [roomId]);
 
+  const videoJSOptions = {
+    sources: [
+      {
+        // src: data.videoSource,
+        src: videoSource,
+        type: "application/x-mpegURL",
+      },
+    ],
+  };
+
   return (
     <div className="flex flex-col h-screen bg-gray-900 text-white">
       {/* Stream Status Bar */}
@@ -132,10 +143,6 @@ const ViewerPage: React.FC = () => {
           <Card className="h-full flex items-center justify-center bg-gray-800">
             {currentComponent ? (
               <div className="text-center p-6 w-full">
-                {/* <div className="mb-4">{currentComponent.icon}</div> */}
-                {/* <h2 className="text-xl font-semibold mb-4">
-                  {currentComponent.title}
-                </h2> */}
                 {currentComponent.imageUrl && !currentComponent.htmlContent && (
                   <img
                     src={currentComponent.imageUrl}
@@ -146,7 +153,13 @@ const ViewerPage: React.FC = () => {
                 {currentComponent.htmlContent && !currentComponent.imageUrl && (
                   <div>{currentComponent.htmlContent}</div>
                 )}
-                {/* <p className="text-white">{currentComponent.content}</p> */}
+                {currentComponent.type === "video" && (
+                  <VideoJSSynced
+                    options={videoJSOptions}
+                    roomID={roomId ?? ""}
+                    isHost={false}
+                  />
+                )}
               </div>
             ) : (
               <p className="text-gray-400">
