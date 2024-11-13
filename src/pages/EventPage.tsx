@@ -29,6 +29,7 @@ import {
 } from "@/components/shadcn/ui/dialog";
 import { sendModuleAction } from "@/utils/messaging-client";
 import { useAppContext } from "@/contexts/AppContext";
+import PollView from "@/components/PollView";
 
 export interface ComponentItem {
   id: string;
@@ -89,8 +90,8 @@ export const dummyComponents: ComponentItem[] = [
     title: "Create Poll",
     icon: <BarChart2 className="w-6 h-6" />,
     content: "Create an interactive poll",
-    imageUrl: `https://picsum.photos/seed/poll/600/400`,
-    link: "/poll",
+    link: "/poll/:roomId",
+    htmlContent:  <PollView roomID={""} />
   },
   {
     id: "5",
@@ -149,7 +150,11 @@ const EventPage: React.FC = () => {
     };
 
     connectWebSocket();
-
+    // assign room id to poll view
+    if (roomId) {
+      components[3].htmlContent = <PollView roomID={roomId} />
+    }
+  
     return () => {
       if (stompClient) {
         stompClient.disconnect();
@@ -162,7 +167,6 @@ const EventPage: React.FC = () => {
 
     const component = components.find((item) => item.id === action.ID);
     if (component) {
-      
       setCurrentComponent(component);
     }
   };
@@ -191,7 +195,11 @@ const EventPage: React.FC = () => {
 
   const handleRedirectToComponent = () => {
     if (currentComponent) {
-      navigate(currentComponent.link);
+      if (currentComponent.link.endsWith(":roomId") && roomId) {
+        navigate(currentComponent.link.replace(":roomId", roomId));
+      } else {
+        navigate(currentComponent.link);
+      }
     }
   };
 

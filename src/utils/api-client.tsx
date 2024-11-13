@@ -3,6 +3,8 @@ import { RegisterFormData } from "../pages/host/HostRegisterPage.tsx";
 import axios from "axios";
 import { User } from "@/utils/types";
 import { CreateEventFormData } from "@/pages/host/HostCreateEvent.tsx";
+import { PollRequestData } from "@/components/PollForm.tsx";
+import { PollResponse, PollResponseData } from "@/pages/host/HostCreatePoll.tsx";
 
 const API_BASE_URL = "http://localhost:8080";
 
@@ -241,3 +243,126 @@ export const getEvents = async (accountID: string) => {
   return response;
 };
 
+export const createPoll = async (
+  pollData: PollRequestData
+): Promise<PollResponseData> => {
+  try {
+    const response = await axios.post(
+      `${API_BASE_URL}/api/poll/create`,
+      pollData,
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+        withCredentials: true,
+      }
+    );
+    return response.data;
+  } catch (error) {
+    // Error handling code remains the same
+    throw error;
+  }
+};
+
+export const getEventPoll = async (
+  code: string,
+  userDisplayName: string
+): Promise<PollResponse> => {
+  try {
+    const response = await axios.post(
+      `${API_BASE_URL}/api/poll/get-event-poll-by-code`,
+      null,
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+        withCredentials: true,
+        params: {
+          code,
+          userDisplayName,
+        },
+      }
+    );
+    console.log(response.data);
+    return response.data;
+  } catch (error) {
+    // Error handling code remains the same
+    throw error;
+  }
+};
+
+export const uploadImage = async (
+  image: File,
+  fileName: string,
+  directory: string
+): Promise<any> => {
+  try {
+    const formData = new FormData();
+    formData.append("image", image);
+    formData.append("fileName", fileName);
+    formData.append("directory", directory);
+    const response = await axios.post(
+      `${API_BASE_URL}/api/image/upload`,
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+        withCredentials: true,
+      }
+    );
+    return response.data;
+  } catch (error) {
+    // Error handling code remains the same
+    throw error;
+  }
+};
+
+export const addVote = async (
+  pollId: number,
+  pollOptionId: number,
+  userDisplayName: string
+): Promise<any> => {
+  try {
+    const response = await axios.post(`${API_BASE_URL}/api/vote/create`, null, {
+      headers: {
+        "Content-Type": "application/json",
+      },
+      withCredentials: true,
+      params: {
+        pollId,
+        pollOptionId,
+        userDisplayName,
+      },
+    });
+    console.log(response.data);
+    return response.data;
+  } catch (error) {
+    // Error handling code remains the same
+    throw error;
+  }
+};
+
+export const changeVote = async (
+  pollId: number,
+  newPollOptionId: number,
+  userDisplayName: string
+): Promise<any> => {
+  try {
+    const response = await axios.post(`${API_BASE_URL}/api/vote/change`, null, {
+      headers: {
+        "Content-Type": "application/json",
+      },
+      withCredentials: true,
+      params: {
+        pollId,
+        newPollOptionId,
+        userDisplayName,
+      },
+    });
+    console.log(response.data);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};

@@ -2,17 +2,13 @@ import { RadioGroup, RadioGroupItem } from "./shadcn/ui/radio-group"
 import { Button } from "./shadcn/ui/button";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { PollOptionResponse, PollResponse } from "@/pages/WatchPartyPage";
+import { PollOptionResponse, PollResponse } from "@/pages/host/HostCreatePoll";
 import { useNavigate } from "react-router-dom";
+import { useAppContext } from "@/contexts/AppContext";
+import { addVote, changeVote, getEventPoll } from "@/utils/api-client";
 
 interface PollViewProps {
-    poll: PollResponse;
-    optionChecked: PollOptionResponse|null;
-    voteSaved: boolean;
-    setOptionChecked: (optionChecked: PollOptionResponse) => void;
-    onCreateVote: () => void;
-    onChangeVote: () => void;
-    watchPartyCode: string;
+    roomID: string;
 };
 
 type PollOptionProps = {
@@ -21,45 +17,101 @@ type PollOptionProps = {
     optionChecked: PollOptionResponse|null;
     setOptionChecked: (optionChecked: PollOptionResponse) => void;
 };
-  
-export const PollView : React.FC<PollViewProps> = ({ poll, optionChecked, onCreateVote, onChangeVote, setOptionChecked, voteSaved, watchPartyCode }) => {
+ 
+export const PollView : React.FC<PollViewProps> = ({ roomID }) => {
+    const [poll, setPoll] = useState<PollResponse|null>(null);
+    const [pollLoaded, setPollLoaded] = useState(false);
     const [voteable, setVoteable] = useState(!poll?.voted);
+    const { user } = useAppContext();
     const navigate = useNavigate();
+    const [optionChecked, setOptionChecked] = useState<PollOptionResponse|null>(null);
+    const [voteSaved, setVoteSaved] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [success, setSuccess] = useState<string | null>(null);
 
-    function voteCreate() {
-        setVoteable(false);
-        onCreateVote();
-    }
 
-    function voteUpdate() {
-        setVoteable(false);
-        onChangeVote();
+    // to retrieve poll and its option
+  const onPollLoad = async() => {
+    try {
+      if(user) {
+        const response = await getEventPoll(roomID, user.username);
+        setPoll(response);
+        setPollLoaded(true);
+        if (response.selectedPollOption) {
+          setOptionChecked(response.selectedPollOption);
+          setVoteSaved(true);
+        } else {
+          setVoteSaved(false);
+        }
+      }
+    } catch (error) {
+        setError("Error retrieving poll");
     }
+  }
 
-    function viewPollResult () {
-        // navigate to poll result page
-        navigate("/view-poll-results",
-            {
-              state : {
-                watchPartyCode: watchPartyCode
-              }
-            }
-        );
+  // when user votes for first time on a poll
+  const onVoteCreate = async () => {
+    if (poll && optionChecked && user) {
+      try {
+        addVote(poll?.pollId, optionChecked?.pollOptionId, user?.username);
+        setSuccess("Voting done successfully!");
+        setVoteSaved(true);
+      } catch (error) {
+        setError("Error creating vote on this poll");
+      }
     }
+  };
+
+  // when user changes their vote on a poll
+  const onVoteChange = async () => {
+    if (poll && optionChecked && user) {
+      try {
+        changeVote(poll?.pollId, optionChecked?.pollOptionId, user?.username);
+        setSuccess("Voting updated successfully!");
+      } catch (error) {
+        setError("Error updating vote on this poll");
+      }
+      
+    }
+  };
+
+  function voteCreate() {
+    setVoteable(false);
+    onVoteCreate();
+}
+
+function voteUpdate() {
+    setVoteable(false);
+    onVoteChange();
+}
+
+function viewPollResult () {
+    // navigate to poll result page
+    navigate("/view-poll-results",
+        {
+          state : {
+            watchPartyCode: roomID
+          }
+        }
+    );
+}
+
+if (!pollLoaded) {
+    onPollLoad();
+  }
     
     return (
-        <div>
+        <div className="text-white justify-center w-full max-w-6xl mx-auto p-6">
             <form className="space-y-4 text-white">
                 <div>
                     {/* RETRIEVE POLL QUESTION AND ITS OPTIONS */}
-                    <h1 className="text-3xl md:text-4xl font-bold mb-2">Poll</h1>
-                    <h2 className="text-xl md:text-2xl font-semibold">{poll.pollQuestion}</h2>
-                    <p className="text-white mb-6">*Select the option you want to vote for and click "Submit Vote"</p>
+                    <h1 className="text-3xl md:text-4xl font-bold mb-2">{poll?.pollQuestion}</h1>
+                    <h2 className="text-xl md:text-2xl font-semibold mb-2">*Select the option you want to vote for and click "Submit Vote"</h2>
                     <RadioGroup 
                         onValueChange={() => voteable && optionChecked && setOptionChecked(optionChecked)}
                     >
                         <div className="flex items-center space-x-2">
-                        {poll.pollOptionList.map((option, id) => 
+                        {poll?.pollOptionList.map((option, id) => 
                             <PollOptionView
                                 key={id}
                                 pollOptionView={option}
@@ -100,16 +152,26 @@ export const PollView : React.FC<PollViewProps> = ({ poll, optionChecked, onCrea
 
                 {/* VIEW POLL RESULT BUTTON */}
                 <div className="space-y-4">
-                        <Button
+                    <Button
                         type="button"
                         variant="default"
                         className="w-full text-white py-2 font-alatsi border"
                         onClick={viewPollResult}
                         >
                            View Poll Result
-                        </Button>
+                    </Button>
                 </div>
             </form>
+            {error && (
+                <div className="mt-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
+                <p>{error}</p>
+                </div>
+            )}
+            {success && (
+                <div className="mt-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded">
+                <p>{success}</p>
+                </div>
+            )}
       </div>
     );
 };

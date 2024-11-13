@@ -1,11 +1,11 @@
-import React, { Suspense, lazy } from "react";
+import React from "react";
 import {
   createBrowserRouter,
   Navigate,
   RouterProvider,
 } from "react-router-dom";
 import ErrorPage from "@/pages/ErrorPage";
-import { ProtectedRoute } from "./ProtectedRoute";
+
 import LandingPage from "@/pages/LandingPage";
 import NotFoundPage from "@/pages/NotFoundPage";
 import WaitingPage from "@/pages/WaitingRoomPage";
@@ -16,6 +16,7 @@ import HostCreateEvent from "@/pages/host/HostCreateEvent";
 import HostManageEvent from "@/pages/host/HostManageEvent";
 import ViewerPage from "@/pages/ViewerPage";
 import Record from "@/pages/VideoRecorder";
+import HostCreatePoll from "@/pages/host/HostCreatePoll";
 
 const router = createBrowserRouter([
   {
@@ -64,6 +65,10 @@ const router = createBrowserRouter([
         path: "host/manage",
         element: <HostManageEvent />,
       },
+      {
+        path: "poll/:roomId",
+        element: <HostCreatePoll />
+      }
     ],
   },
   {

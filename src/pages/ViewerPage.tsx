@@ -9,6 +9,7 @@ import PollComponent from "./components/PollComponent";
 import { ModuleConnection } from "@/utils/messaging-client";
 import { useParams } from "react-router-dom";
 import { dummyComponents, ModuleAction } from "./EventPage";
+import PollView from "@/components/PollView";
 
 // WebSocket connection
 const WS_URL = "ws://localhost:8080/moduleAction";
@@ -74,6 +75,9 @@ const ViewerPage: React.FC = () => {
           (component) => component.id === action.ID
         );
         if (component) {
+          if (component.type == "poll") {
+            component.htmlContent = <PollView roomID={roomID}/>
+          }
           setCurrentComponent(component);
         }
       },
