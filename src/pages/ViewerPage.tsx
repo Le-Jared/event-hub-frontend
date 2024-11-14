@@ -3,7 +3,7 @@ import { Card } from "@/components/shadcn/ui/card";
 import { ScrollArea } from "@/components/shadcn/ui/scroll-area";
 import { Video, Image, FileQuestion } from "lucide-react";
 import LiveChat from "@/components/LiveChat";
-import Chatbot from "@/components/experimental/ChatBot";
+import Chatbot from "@/components/experimental/AIchatbot";
 import LiveIndicator from "./components/LiveIndicator";
 import PollComponent from "./components/PollComponent";
 import { ModuleConnection, StreamConnection } from "@/utils/messaging-client";
