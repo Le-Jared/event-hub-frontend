@@ -141,12 +141,20 @@ const ViewerPage: React.FC = () => {
           <Card className="h-full flex items-center justify-center bg-gray-800">
             {currentComponent ? (
               <div className="text-center p-6 w-full">
-                {currentComponent.imageUrl && !currentComponent.htmlContent && (
+                {currentComponent.imageUrl && currentComponent.type !== "slide" && !currentComponent.htmlContent && (
                   <img
                     src={currentComponent.imageUrl}
                     alt={currentComponent.title}
                     className="mx-auto mb-4 rounded-lg shadow-md"
                   />
+                )}
+                {currentComponent.type === "slide" && (
+                  <div className="carousel w-full">
+                    <img
+                    src={currentComponent.imageUrl}
+                    alt={currentComponent.title}
+                    className="w-full" />
+                  </div>
                 )}
                 {currentComponent.htmlContent && !currentComponent.imageUrl && (
                   <div>{currentComponent.htmlContent}</div>
