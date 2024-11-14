@@ -10,7 +10,6 @@ import LiveIndicator from "./components/LiveIndicator";
 import {Dialog,DialogContent,DialogHeader,DialogTitle,} from "@/components/shadcn/ui/dialog";
 import {ModuleConnection,sendModuleAction,sendStreamStatus,StreamConnection} from "@/utils/messaging-client";
 import { useAppContext } from "@/contexts/AppContext";
-import PollView from "@/components/PollView";
 import VideoJSSynced from "@/components/VideoJSSynced";
 import { Components, ComponentItem } from '@/data/componentData';
 
@@ -51,6 +50,7 @@ const EventPage: React.FC = () => {
   const { user } = useAppContext();
 
   useEffect(() => {
+    
     const cleanupWebSocket = ModuleConnection({
       roomID: roomId ?? "",
       onReceived: (action: ModuleAction) => {
@@ -66,11 +66,11 @@ const EventPage: React.FC = () => {
         setStreamStatus((prev) => ({ ...prev, isLive }));
       },
     });
-
     return cleanupWebSocket;
   }, [roomId]);
 
   useEffect(() => {
+   
     const cleanupStreamWebSocket = StreamConnection({
       roomID: roomId ?? "",
       onReceived: (status) => {
@@ -92,12 +92,8 @@ const EventPage: React.FC = () => {
         }
       },
     });
-    // assign room id to poll view
-    if (roomId) {
-      components[3].htmlContent = <PollView roomID={roomId} />
-    }
-  
     return cleanupStreamWebSocket;
+    
   }, [roomId]);
 
   const handleGoLive = () => {
@@ -112,12 +108,13 @@ const EventPage: React.FC = () => {
 
   const handleComponentClick = (component: ComponentItem) => {
     setCurrentComponent(component);
+    console.log(component, "com");
     sendModuleAction({
       ID: component.id,
       TYPE: component.type,
       SESSION_ID: roomId ?? "",
       SENDER: user?.username ?? "",
-      TIMESTAMP: new Date().toISOString(),
+      TIMESTAMP: new Date().toISOString()
     });
   };
 

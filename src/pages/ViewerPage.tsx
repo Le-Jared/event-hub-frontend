@@ -10,9 +10,11 @@ import { ModuleConnection, StreamConnection } from "@/utils/messaging-client";
 import { useParams } from "react-router-dom";
 import { ModuleAction, videoSource } from "./EventPage";
 import PollView from "@/components/PollView";
-import { Components } from "../data/componentData";
-import { getStreamStatus } from "@/utils/api-client";
+import { Components, Poll } from "../data/componentData";
+import { getEventPoll, getStreamStatus } from "@/utils/api-client";
 import VideoJSSynced from "@/components/VideoJSSynced";
+import { useAppContext } from "@/contexts/AppContext";
+import { PollResponse } from "./host/HostCreatePoll";
 
 interface ComponentItem {
   id: string;
@@ -53,18 +55,8 @@ const ViewerPage: React.FC = () => {
   });
   const { roomId } = useParams();
   const roomID = roomId ? roomId.toString() : "";
+  const { user } = useAppContext();
 
-  const handlePollVote = (optionId: number) => {
-    // if (socket?.readyState === WebSocket.OPEN) {
-    //   socket.send(
-    //     JSON.stringify({
-    //       type: "POLL_VOTE",
-    //       optionId: optionId,
-    //       room: roomID,
-    //     })
-    //   );
-    // }
-  };
 
   useEffect(() => {
     const cleanupWebSocket = ModuleConnection({
@@ -75,8 +67,8 @@ const ViewerPage: React.FC = () => {
           (component) => component.id === action.ID
         );
         if (component) {
-          if (component.type == "poll") {
-            component.htmlContent = <PollView roomID={roomID}/>
+          if (component.type == "poll" && Poll) {
+            component.htmlContent = <PollView roomID={roomID} poll={Poll}/>
           }
           setCurrentComponent(component);
         }
@@ -115,9 +107,13 @@ const ViewerPage: React.FC = () => {
         cleanupStreamWebSocket();
       };
     };
+    
     fetchStreamData();
     // return cleanupStreamWebSocket;
   }, [roomId]);
+
+ 
+  
 
   const videoJSOptions = {
     sources: [
@@ -129,6 +125,7 @@ const ViewerPage: React.FC = () => {
     ],
   };
 
+  
   return (
     <div className="flex flex-col h-screen bg-gray-900 text-white">
       {/* Stream Status Bar */}
@@ -173,13 +170,6 @@ const ViewerPage: React.FC = () => {
 
         {/* Right Sidebar */}
         <div className="flex-1 bg-gray-800 shadow-lg flex flex-col">
-          {/* Poll Section */}
-          <div className="flex-1 overflow-hidden">
-            <ScrollArea className="h-full">
-              <PollComponent onVote={handlePollVote} />
-            </ScrollArea>
-          </div>
-
           {/* Live Chat */}
           <div className="flex-1 border-b border-gray-700">
             <ScrollArea className="h-full">

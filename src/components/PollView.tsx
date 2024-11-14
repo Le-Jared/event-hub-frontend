@@ -8,6 +8,7 @@ import { useAppContext } from "@/contexts/AppContext";
 import { addVote, changeVote, getEventPoll } from "@/utils/api-client";
 
 interface PollViewProps {
+    poll?: PollResponse;
     roomID: string;
 };
 
@@ -18,9 +19,7 @@ type PollOptionProps = {
     setOptionChecked: (optionChecked: PollOptionResponse) => void;
 };
  
-export const PollView : React.FC<PollViewProps> = ({ roomID }) => {
-    const [poll, setPoll] = useState<PollResponse|null>(null);
-    const [pollLoaded, setPollLoaded] = useState(false);
+export const PollView : React.FC<PollViewProps> = ({ poll, roomID }) => {
     const [voteable, setVoteable] = useState(!poll?.voted);
     const { user } = useAppContext();
     const navigate = useNavigate();
@@ -28,26 +27,6 @@ export const PollView : React.FC<PollViewProps> = ({ roomID }) => {
     const [voteSaved, setVoteSaved] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
-
-
-    // to retrieve poll and its option
-  const onPollLoad = async() => {
-    try {
-      if(user) {
-        const response = await getEventPoll(roomID, user.username);
-        setPoll(response);
-        setPollLoaded(true);
-        if (response.selectedPollOption) {
-          setOptionChecked(response.selectedPollOption);
-          setVoteSaved(true);
-        } else {
-          setVoteSaved(false);
-        }
-      }
-    } catch (error) {
-        setError("Error retrieving poll");
-    }
-  }
 
   // when user votes for first time on a poll
   const onVoteCreate = async () => {
@@ -96,10 +75,6 @@ function viewPollResult () {
     );
 }
 
-if (!pollLoaded) {
-    onPollLoad();
-  }
-    
     return (
         <div className="text-white justify-center w-full max-w-6xl mx-auto p-6">
             <form className="space-y-4 text-white">
@@ -208,7 +183,7 @@ export const PollOptionView = ({
     
     return (
         <div 
-            style={{width: 240}}
+            style={{width: 250}}
             className={`${optionChecked?.value == pollOptionView.value ? 'bg-green-500' : 'bg-gray-800'} rounded-lg shadow-lg overflow-hidden flex flex-col h-full border border-gray-700`}
             onClick={() => voteable && setOptionChecked(pollOptionView)}
         >

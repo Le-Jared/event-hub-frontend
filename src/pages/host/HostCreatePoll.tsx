@@ -36,7 +36,7 @@ export type PollResponse = {
   pollQuestion: string;
   pollOptionList: PollOptionResponse[];
   voted: boolean;
-  selectedPollOption: PollOptionResponse;
+  selectedPollOption: PollOptionResponse| null;
 }
 
 export type PollOptionResponse = {
