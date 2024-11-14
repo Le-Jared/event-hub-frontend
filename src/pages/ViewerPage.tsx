@@ -8,7 +8,8 @@ import LiveIndicator from "./components/LiveIndicator";
 import PollComponent from "./components/PollComponent";
 import { ModuleConnection, StreamConnection } from "@/utils/messaging-client";
 import { useParams } from "react-router-dom";
-import { dummyComponents, ModuleAction, videoSource } from "./EventPage";
+import { ModuleAction, videoSource } from "./EventPage";
+import { Components } from "../data/componentData";
 import { getStreamStatus } from "@/utils/api-client";
 import VideoJSSynced from "@/components/VideoJSSynced";
 
@@ -72,7 +73,7 @@ const ViewerPage: React.FC = () => {
       roomID: roomID,
       onReceived: (action: ModuleAction) => {
         console.log("Received ModuleAction:", action);
-        const component = dummyComponents.find(
+        const component = Components.find(
           (component) => component.id === action.ID
         );
         if (component) {

@@ -4,26 +4,14 @@ import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 import { Card } from "@/components/shadcn/ui/card";
 import { ScrollArea } from "@/components/shadcn/ui/scroll-area";
 import { Button } from "@/components/shadcn/ui/button";
-import {BarChart2,Box,Image,FileVideo,Radio,ArrowLeft,Plus,ExternalLink,Trash2,GripVertical} from "lucide-react";
+import {ArrowLeft,Plus,ExternalLink,Trash2,GripVertical} from "lucide-react";
 import LiveChat from "@/components/LiveChat";
 import LiveIndicator from "./components/LiveIndicator";
-import VideoRecorder from "./VideoRecorder";
 import {Dialog,DialogContent,DialogHeader,DialogTitle,} from "@/components/shadcn/ui/dialog";
 import {ModuleConnection,sendModuleAction,sendStreamStatus,StreamConnection} from "@/utils/messaging-client";
 import { useAppContext } from "@/contexts/AppContext";
 import VideoJSSynced from "@/components/VideoJSSynced";
-import ModelViewer from "./ModelPage";
-
-export interface ComponentItem {
-  id: string;
-  type: string;
-  title: string;
-  icon: React.ReactNode;
-  content: string;
-  imageUrl?: string;
-  htmlContent?: any;
-  link: string;
-}
+import { Components, ComponentItem } from '@/data/componentData';
 
 interface StreamStatus {
   isLive: boolean;
@@ -38,54 +26,6 @@ export interface ModuleAction {
   SENDER: string;
   TIMESTAMP: string;
 }
-
-export const dummyComponents: ComponentItem[] = [
-  {
-    id: "1",
-    type: "slide",
-    title: "Slide",
-    icon: <Image className="w-6 h-6" />,
-    content: "Welcome to the presentation!",
-    imageUrl: "https://picsum.photos/seed/picsum/600/400",
-    link: "/slide/1",
-  },
-  {
-    id: "2",
-    type: "video",
-    title: "Demo Video",
-    icon: <FileVideo className="w-6 h-6" />,
-    content: "Demo Video",
-    // imageUrl: `https://picsum.photos/seed/timothy/600/400`,
-    link: "/record",
-  },
-  {
-    id: "3",
-    type: "live-webcam",
-    title: "Live Webcam",
-    icon: <Radio className="w-6 h-6" />,
-    content: "See it Live",
-    link: "/live",
-    htmlContent: <VideoRecorder viewOnly />,
-  },
-  {
-    id: "4",
-    type: "poll",
-    title: "Create Poll",
-    icon: <BarChart2 className="w-6 h-6" />,
-    content: "Create an interactive poll",
-    imageUrl: `https://picsum.photos/seed/poll/600/400`,
-    link: "/poll",
-  },
-  {
-    id: "5",
-    type: "model",
-    title: "3D Model",
-    icon: <Box className="w-6 h-6" />,
-    content: "Upload 3D Model",
-    link: "/model",
-    htmlContent: <ModelViewer viewOnly />,
-  },
-];
 
 export const videoSource =
   "http://localhost:8080/encoded/steamboatwillie_001/master.m3u8";
@@ -103,15 +43,9 @@ const videoJSOptions = {
 const EventPage: React.FC = () => {
   const { roomId } = useParams<{ roomId: string }>();
   const navigate = useNavigate();
-  const [currentComponent, setCurrentComponent] =
-    useState<ComponentItem | null>(null);
-  const [components, setComponents] =
-    useState<ComponentItem[]>(dummyComponents);
-  const [streamStatus, setStreamStatus] = useState<StreamStatus>({
-    isLive: false,
-    viewerCount: 0,
-    sessionId: roomId,
-  });
+  const [currentComponent, setCurrentComponent] = useState<ComponentItem | null>(null);
+  const [components, setComponents] = useState<ComponentItem[]>(Components);
+  const [streamStatus, setStreamStatus] = useState<StreamStatus>({isLive: false,viewerCount: 0,sessionId: roomId,});
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const { user } = useAppContext();
 
@@ -120,7 +54,7 @@ const EventPage: React.FC = () => {
       roomID: roomId ?? "",
       onReceived: (action: ModuleAction) => {
         console.log("Received ModuleAction:", action);
-        const component = dummyComponents.find(
+        const component = Components.find(
           (component) => component.id === action.ID
         );
         if (component) {
@@ -342,7 +276,7 @@ const EventPage: React.FC = () => {
                   </DialogHeader>
                   <DialogContent>
                     <div className="grid gap-4 py-4">
-                      {dummyComponents.map((component) => (
+                      {Components.map((component) => (
                         <Button
                           key={component.id}
                           onClick={() => {
