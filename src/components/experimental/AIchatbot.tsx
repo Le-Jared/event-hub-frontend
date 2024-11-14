@@ -1,64 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { sendChatMessage } from '@/utils/api-client';
 import { Mic, MicOff, Volume2 } from 'lucide-react';
+import { Message, SpeechRecognition, SpeechRecognitionEvent, SpeechRecognitionErrorEvent, Voice } from './types';
+import { languages, adjustTextAreaHeight, findVoiceForLanguage } from './utils';
 
-interface Message {
-  text: string;
-  sender: 'user' | 'bot';
-}
-
-interface SpeechRecognitionEvent extends Event {
-  results: SpeechRecognitionResultList;
-}
-
-interface SpeechRecognitionResultList {
-  [index: number]: SpeechRecognitionResult;
-  length: number;
-}
-
-interface SpeechRecognitionResult {
-  [index: number]: SpeechRecognitionAlternative;
-  isFinal: boolean;
-  length: number;
-}
-
-interface SpeechRecognitionAlternative {
-  transcript: string;
-  confidence: number;
-}
-
-interface SpeechRecognitionErrorEvent extends Event {
-  error: string;
-  message: string;
-}
-
-interface SpeechRecognition extends EventTarget {
-  continuous: boolean;
-  interimResults: boolean;
-  lang: string;
-  onresult: (event: SpeechRecognitionEvent) => void;
-  onerror: (event: SpeechRecognitionErrorEvent) => void;
-  onend: () => void;
-  start: () => void;
-  stop: () => void;
-}
-
-interface Voice {
-  default: boolean;
-  lang: string;
-  localService: boolean;
-  name: string;
-  voiceURI: string;
-}
-
-declare global {
-  interface Window {
-    SpeechRecognition: new () => SpeechRecognition;
-    webkitSpeechRecognition: new () => SpeechRecognition;
-  }
-}
-
-const VideoChatbot: React.FC = () => {
+const AIchatbot: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -73,17 +19,6 @@ const VideoChatbot: React.FC = () => {
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const synthRef = useRef<SpeechSynthesis | null>(null);
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
-
-  const languages = [
-    { code: 'en-US', name: 'English (US)' },
-    { code: 'es-ES', name: 'Spanish (Spain)' },
-    { code: 'fr-FR', name: 'French (France)' },
-    { code: 'de-DE', name: 'German (Germany)' },
-    { code: 'it-IT', name: 'Italian (Italy)' },
-    { code: 'ja-JP', name: 'Japanese (Japan)' },
-    { code: 'ko-KR', name: 'Korean (South Korea)' },
-    { code: 'zh-CN', name: 'Chinese (Simplified)' },
-  ];
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -114,7 +49,7 @@ const VideoChatbot: React.FC = () => {
       const loadVoices = () => {
         const availableVoices = synthRef.current?.getVoices() || [];
         setVoices(availableVoices);
-        setSelectedVoice(availableVoices.find(voice => voice.lang === selectedLanguage) || null);
+        setSelectedVoice(findVoiceForLanguage(availableVoices, selectedLanguage));
       };
   
       if (synthRef.current?.onvoiceschanged !== undefined) {
@@ -156,14 +91,7 @@ const VideoChatbot: React.FC = () => {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInput(e.target.value);
-    adjustTextAreaHeight();
-  };
-
-  const adjustTextAreaHeight = () => {
-    if (textAreaRef.current) {
-      textAreaRef.current.style.height = 'auto';
-      textAreaRef.current.style.height = `${textAreaRef.current.scrollHeight}px`;
-    }
+    adjustTextAreaHeight(textAreaRef);
   };
 
   const toggleListening = () => {
@@ -181,8 +109,7 @@ const VideoChatbot: React.FC = () => {
     if (recognitionRef.current) {
       recognitionRef.current.lang = newLang;
     }
-    const newVoice = voices.find(voice => voice.lang === newLang);
-    setSelectedVoice(newVoice || null);
+    setSelectedVoice(findVoiceForLanguage(voices, newLang));
   };
 
   const handleVoiceChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -228,7 +155,7 @@ const VideoChatbot: React.FC = () => {
       ) : (
         <div className="bg-gray-800 rounded-lg shadow-xl w-96 h-[32rem] flex flex-col">
           <div className="flex justify-between items-center p-3 border-b border-gray-700">
-            <h2 className="text-xl font-semibold text-white">Chatbot</h2>
+            <h2 className="text-xl font-semibold text-white">AI Chatbot</h2>
             <button onClick={() => setIsOpen(false)} className="text-gray-400 hover:text-gray-200 transition-colors duration-200" aria-label="Close chat">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -325,6 +252,4 @@ const VideoChatbot: React.FC = () => {
   );
 };
 
-export default VideoChatbot;
-                        
-
+export default AIchatbot;

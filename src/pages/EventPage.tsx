@@ -1,46 +1,18 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import SockJS from "sockjs-client";
-import { Stomp } from "@stomp/stompjs";
 import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 import { Card } from "@/components/shadcn/ui/card";
 import { ScrollArea } from "@/components/shadcn/ui/scroll-area";
 import { Button } from "@/components/shadcn/ui/button";
-import {
-  BarChart2,
-  Box,
-  Image,
-  FileVideo,
-  Radio,
-  ArrowLeft,
-  Plus,
-  ExternalLink,
-  Trash2,
-  GripVertical,
-} from "lucide-react";
+import {ArrowLeft,Plus,ExternalLink,Trash2,GripVertical} from "lucide-react";
 import LiveChat from "@/components/LiveChat";
 import LiveIndicator from "./components/LiveIndicator";
-import VideoRecorder from "./VideoRecorder";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/shadcn/ui/dialog";
-import { sendModuleAction } from "@/utils/messaging-client";
+import {Dialog,DialogContent,DialogHeader,DialogTitle,} from "@/components/shadcn/ui/dialog";
+import {ModuleConnection,sendModuleAction,sendStreamStatus,StreamConnection} from "@/utils/messaging-client";
 import { useAppContext } from "@/contexts/AppContext";
 import PollView from "@/components/PollView";
-
-export interface ComponentItem {
-  id: string;
-  type: string;
-  title: string;
-  icon: React.ReactNode;
-  content: string;
-  imageUrl?: string;
-  htmlContent?: any;
-  link: string;
-}
+import VideoJSSynced from "@/components/VideoJSSynced";
+import { Components, ComponentItem } from '@/data/componentData';
 
 interface StreamStatus {
   isLive: boolean;
@@ -56,130 +28,86 @@ export interface ModuleAction {
   TIMESTAMP: string;
 }
 
-export const dummyComponents: ComponentItem[] = [
-  {
-    id: "1",
-    type: "slide",
-    title: "Slide",
-    icon: <Image className="w-6 h-6" />,
-    content: "Welcome to the presentation!",
-    imageUrl: "https://picsum.photos/seed/picsum/600/400",
-    link: "/slide/1",
-  },
-  {
-    id: "2",
-    type: "video",
-    title: "Demo Video",
-    icon: <FileVideo className="w-6 h-6" />,
-    content: "Demo Video",
-    imageUrl: `https://picsum.photos/seed/timothy/600/400`,
-    link: "/record",
-  },
-  {
-    id: "3",
-    type: "live-webcam",
-    title: "Live Webcam",
-    icon: <Radio className="w-6 h-6" />,
-    content: "See it Live",
-    link: "/live",
-    htmlContent: <VideoRecorder viewOnly/>
-  },
-  {
-    id: "4",
-    type: "poll",
-    title: "Create Poll",
-    icon: <BarChart2 className="w-6 h-6" />,
-    content: "Create an interactive poll",
-    link: "/poll/:roomId",
-    htmlContent:  <PollView roomID={""} />
-  },
-  {
-    id: "5",
-    type: "model",
-    title: "3D Model",
-    icon: <Box className="w-6 h-6" />,
-    content: "Upload 3D Model",
-    imageUrl: `https://picsum.photos/seed/model/600/400`,
-    link: "/model",
-  }
-];
+export const videoSource =
+  "http://localhost:8080/encoded/steamboatwillie_001/master.m3u8";
+
+const videoJSOptions = {
+  sources: [
+    {
+      // src: data.videoSource,
+      src: videoSource,
+      type: "application/x-mpegURL",
+    },
+  ],
+};
 
 const EventPage: React.FC = () => {
   const { roomId } = useParams<{ roomId: string }>();
   const navigate = useNavigate();
-  const [stompClient, setStompClient] = useState<any>(null);
-  const [currentComponent, setCurrentComponent] =
-    useState<ComponentItem | null>(null);
-  const [components, setComponents] =
-    useState<ComponentItem[]>(dummyComponents);
-  const [streamStatus, setStreamStatus] = useState<StreamStatus>({
-    isLive: false,
-    viewerCount: 0,
-    sessionId: roomId,
-  });
+  const [currentComponent, setCurrentComponent] = useState<ComponentItem | null>(null);
+  const [components, setComponents] = useState<ComponentItem[]>(Components);
+  const [streamStatus, setStreamStatus] = useState<StreamStatus>({isLive: false,viewerCount: 0,sessionId: roomId,});
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const { user } = useAppContext();
 
   useEffect(() => {
-    const connectWebSocket = () => {
-      const socket = new SockJS("http://localhost:8080/moduleAction");
-      const stomp = Stomp.over(socket);
+    const cleanupWebSocket = ModuleConnection({
+      roomID: roomId ?? "",
+      onReceived: (action: ModuleAction) => {
+        console.log("Received ModuleAction:", action);
+        const component = Components.find(
+          (component) => component.id === action.ID
+        );
+        if (component) {
+          setCurrentComponent(component);
+        }
+      },
+      goLive: (isLive: boolean) => {
+        setStreamStatus((prev) => ({ ...prev, isLive }));
+      },
+    });
 
-      stomp.connect(
-        {},
-        () => {
-          console.log("Connected to WebSocket");
+    return cleanupWebSocket;
+  }, [roomId]);
+
+  useEffect(() => {
+    const cleanupStreamWebSocket = StreamConnection({
+      roomID: roomId ?? "",
+      onReceived: (status) => {
+        console.log("Received StatusMessage:", status);
+        if (status.TYPE === "VIEWER_JOIN") {
+          setStreamStatus((prev) => ({
+            ...prev,
+            viewerCount: status.VIEWER_COUNT || 0,
+          }));
+        } else if (status.TYPE === "VIEWER_LEAVE") {
+          setStreamStatus((prev) => ({
+            ...prev,
+            viewerCount: status.VIEWER_COUNT || 0,
+          }));
+        } else if (status.TYPE === "START_STREAM") {
           setStreamStatus((prev) => ({ ...prev, isLive: true }));
-
-          stomp.subscribe(`/topic/moduleAction/${roomId}`, (message) => {
-            try {
-              const action: ModuleAction = JSON.parse(message.body);
-              handleModuleAction(action);
-            } catch (error) {
-              console.error("Error parsing message:", error);
-            }
-          });
-
-          setStompClient(stomp);
-        },
-        (error: any) => {
-          console.error("WebSocket connection error:", error);
+        } else if (status.TYPE === "STOP_STREAM") {
           setStreamStatus((prev) => ({ ...prev, isLive: false }));
         }
-      );
-    };
-
-    connectWebSocket();
+      },
+    });
     // assign room id to poll view
     if (roomId) {
       components[3].htmlContent = <PollView roomID={roomId} />
     }
   
-    return () => {
-      if (stompClient) {
-        stompClient.disconnect();
-      }
-    };
+    return cleanupStreamWebSocket;
   }, [roomId]);
 
-  const handleModuleAction = (action: ModuleAction) => {
-    console.log("Received module action:", action);
-
-    const component = components.find((item) => item.id === action.ID);
-    if (component) {
-      setCurrentComponent(component);
-    }
-  };
-
   const handleGoLive = () => {
-    if (!streamStatus.isLive && stompClient) {
-      setStreamStatus((prev) => ({ ...prev, isLive: true }));
-    } else {
-      setStreamStatus((prev) => ({ ...prev, isLive: false }));
-      if (stompClient) {
-        stompClient.disconnect();
-      }
-    }
+    const newStatus = !streamStatus.isLive;
+    setStreamStatus((prev) => ({ ...prev, isLive: newStatus }));
+    sendStreamStatus({
+      TYPE: newStatus ? "START_STREAM" : "STOP_STREAM",
+      SESSION_ID: roomId,
+      IS_LIVE: newStatus,
+    });
   };
 
   const handleComponentClick = (component: ComponentItem) => {
@@ -294,17 +222,24 @@ const EventPage: React.FC = () => {
                       <h2 className="text-xl font-semibold mb-4">
                         {currentComponent.title}
                       </h2>
-                      {!currentComponent.htmlContent && currentComponent.imageUrl && (
-                        <img
-                          src={currentComponent.imageUrl}
-                          alt={currentComponent.title}
-                          className="mx-auto mb-4 rounded-lg shadow-md w-full h-[400px] object-cover"
+                      {!currentComponent.htmlContent &&
+                        currentComponent.imageUrl && (
+                          <img
+                            src={currentComponent.imageUrl}
+                            alt={currentComponent.title}
+                            className="mx-auto mb-4 rounded-lg shadow-md w-full h-[400px] object-cover"
+                          />
+                        )}
+                      {currentComponent.htmlContent &&
+                        !currentComponent.imageUrl && (
+                          <div>{currentComponent.htmlContent}</div>
+                        )}
+                      {currentComponent.type === "video" && (
+                        <VideoJSSynced
+                          options={videoJSOptions}
+                          roomID={roomId ?? ""}
+                          isHost={true}
                         />
-                      )}
-                       {currentComponent.htmlContent &&  !currentComponent.imageUrl && (
-                        <div>
-                         {currentComponent.htmlContent}
-                        </div>
                       )}
                       <p className="text-white mb-4">
                         {currentComponent.content}
@@ -350,7 +285,7 @@ const EventPage: React.FC = () => {
                   </DialogHeader>
                   <DialogContent>
                     <div className="grid gap-4 py-4">
-                      {dummyComponents.map((component) => (
+                      {Components.map((component) => (
                         <Button
                           key={component.id}
                           onClick={() => {

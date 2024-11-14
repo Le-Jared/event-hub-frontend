@@ -5,6 +5,7 @@ import { Message } from "@/components/LiveChat";
 import { Emoji } from "@/components/EmojiReaction";
 import { ComponentItem, ModuleAction } from "@/pages/EventPage";
 import Module from "module";
+import { StatusMessage } from "@/pages/ViewerPage";
 
 export interface MessagingClientOptions {
   roomID: string;
@@ -19,11 +20,18 @@ export interface EmojiClientOptions {
 export interface ModuleClientOptions {
   roomID: string;
   onReceived: (action: ModuleAction) => void;
+  goLive: (isLive: boolean) => void;
+}
+
+export interface StreamClientOptions {
+  roomID: string;
+  onReceived: (status: StatusMessage) => void;
 }
 
 let client: any = null;
 let emojiClient: any = null;
 let moduleClient: any = null;
+let streamClient: any = null;
 
 /**
  * Initializes WebSocket connection and subscribes to the chat topic
@@ -200,5 +208,64 @@ export const sendModuleAction = async (action: ModuleAction) => {
       console.log("Reconnected and sending module action:", action);
       moduleClient.send("/app/moduleAction", {}, JSON.stringify(action));
     });
+  }
+};
+
+export const StreamConnection = (options: StreamClientOptions) => {
+  const { roomID, onReceived } = options;
+  const userToken = localStorage.getItem("watchparty-token");
+  let token = userToken?.substring(1, userToken.length - 1);
+
+  if (!streamClient || !streamClient.connected) {
+    streamClient = Stomp.over(
+      () => new SockJS(`http://localhost:8080/streamStatus?roomID=${roomID}`)
+    );
+    streamClient.reconnectDelay = 5000;
+
+    streamClient.connect(
+      {},
+      () => {
+        const topic = `/topic/streamStatus/${roomID}`;
+        console.log(`Connected and subscribed to: ${topic}`);
+
+        // Subscribe to the stream status topic
+        streamClient.subscribe(topic, (message: any) => {
+          const statusMessage = JSON.parse(message.body);
+          console.log(`New StatusMessage received: ${statusMessage.TYPE}`);
+          onReceived(statusMessage);
+        });
+
+        // Notify the server of a new viewer joining
+        sendStreamStatus({
+          TYPE: "VIEWER_JOIN",
+          SESSION_ID: roomID,
+        });
+      },
+      (error: Error) => {
+        console.error("WebSocket connection error:", error);
+      }
+    );
+  }
+
+  return () => {
+    if (streamClient && streamClient.connected) {
+      // Notify the server when a viewer leaves
+      sendStreamStatus({
+        TYPE: "VIEWER_LEAVE",
+        SESSION_ID: roomID,
+      });
+
+      streamClient.disconnect(() => {
+        console.log("Disconnected from WebSocket - streamClient");
+      });
+      streamClient = null;
+    }
+  };
+};
+
+export const sendStreamStatus = async (status: StatusMessage) => {
+  if (streamClient && streamClient.connected) {
+    console.log("Sending status message:", status);
+    streamClient.send("/app/streamStatus", {}, JSON.stringify(status));
   }
 };
