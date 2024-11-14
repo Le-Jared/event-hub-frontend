@@ -24,7 +24,7 @@ const upload = multer({
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY);
 const fileManager = new GoogleAIFileManager(process.env.GOOGLE_AI_API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" }); // Note: Changed to pro for image support
+const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" }); 
 
 // Helper function to convert file to GenerativePart
 function fileToGenerativePart(path, mimeType) {

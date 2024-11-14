@@ -13,9 +13,6 @@ import { Components } from "../data/componentData";
 import { getStreamStatus } from "@/utils/api-client";
 import VideoJSSynced from "@/components/VideoJSSynced";
 
-// WebSocket connection
-const WS_URL = "http://localhost:8080/streamStatus";
-
 interface ComponentItem {
   id: string;
   type: string;
