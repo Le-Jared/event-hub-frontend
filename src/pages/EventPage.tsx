@@ -32,6 +32,7 @@ import {
   StreamConnection,
 } from "@/utils/messaging-client";
 import { useAppContext } from "@/contexts/AppContext";
+import ModelViewer from "./ModelPage";
 
 export interface ComponentItem {
   id: string;
@@ -101,8 +102,8 @@ export const dummyComponents: ComponentItem[] = [
     title: "3D Model",
     icon: <Box className="w-6 h-6" />,
     content: "Upload 3D Model",
-    imageUrl: `https://picsum.photos/seed/model/600/400`,
     link: "/model",
+    htmlContent: <ModelViewer viewOnly />,
   },
 ];
 
