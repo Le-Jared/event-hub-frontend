@@ -189,6 +189,18 @@ const EventPage: React.FC = () => {
     }
   };
 
+  const handleSlides = (index: string) => {
+    const selectedSlide = components.filter(component => index == component.id);
+    setCurrentComponent(selectedSlide[0]);
+    sendModuleAction({
+      ID: selectedSlide[0].id,
+      TYPE: selectedSlide[0].type,
+      SESSION_ID: roomId ?? "",
+      SENDER: user?.username ?? "",
+      TIMESTAMP: new Date().toISOString(),
+    });
+  };
+
   return (
     <div className="flex flex-col h-screen bg-gray-900 text-white">
       {/* Top Navigation Bar */}
@@ -234,6 +246,7 @@ const EventPage: React.FC = () => {
                         {currentComponent.title}
                       </h2>
                       {!currentComponent.htmlContent &&
+                        currentComponent.type !== "slide" && 
                         currentComponent.imageUrl && (
                           <img
                             src={currentComponent.imageUrl}
@@ -241,6 +254,18 @@ const EventPage: React.FC = () => {
                             className="mx-auto mb-4 rounded-lg shadow-md max-w-full max-h-[80%] object-contain"
                           />
                         )}
+                      {currentComponent.type === "slide" && (
+                        <div className="carousel w-full">
+                            <img
+                            src={currentComponent.imageUrl}
+                            alt={currentComponent.title}
+                            className="w-full" />
+                            <div className="absolute left-5 right-5 top-1/2 flex -translate-y-1/2 transform justify-between">
+                              <Button className="btn btn-circle" onClick={(e)=> {e.stopPropagation(); handleSlides(currentComponent.next)}}>❮</Button>
+                              <Button className="btn btn-circle" onClick={(e)=> {e.stopPropagation(); handleSlides(currentComponent.prev)}}>❯</Button>
+                            </div>
+                        </div>
+                      )}
                       {currentComponent.htmlContent &&
                         !currentComponent.imageUrl && (
                           <div className="max-w-full max-h-full overflow-auto">
