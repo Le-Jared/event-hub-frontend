@@ -242,9 +242,7 @@ export const getEvents = async (accountID: string) => {
   return response;
 };
 
-export const getStreamStatus = async (
-  roomId: string
-): Promise<StatusMessage> => {
+export const getStreamStatus = async (roomId: string): Promise<any> => {
   try {
     const response = await axios.get(
       `${API_BASE_URL}/api/streamStatus/${roomId}`,
