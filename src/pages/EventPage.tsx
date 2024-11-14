@@ -261,8 +261,8 @@ const EventPage: React.FC = () => {
                             alt={currentComponent.title}
                             className="w-full" />
                             <div className="absolute left-5 right-5 top-1/2 flex -translate-y-1/2 transform justify-between">
-                              <Button className="btn btn-circle" onClick={(e)=> {e.stopPropagation(); handleSlides(currentComponent.next)}}>❮</Button>
-                              <Button className="btn btn-circle" onClick={(e)=> {e.stopPropagation(); handleSlides(currentComponent.prev)}}>❯</Button>
+                              <Button className="btn btn-circle" onClick={(e)=> {e.stopPropagation(); handleSlides(currentComponent.next!)}}>❮</Button>
+                              <Button className="btn btn-circle" onClick={(e)=> {e.stopPropagation(); handleSlides(currentComponent.prev!)}}>❯</Button>
                             </div>
                         </div>
                       )}
