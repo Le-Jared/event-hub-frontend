@@ -4,27 +4,11 @@ import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 import { Card } from "@/components/shadcn/ui/card";
 import { ScrollArea } from "@/components/shadcn/ui/scroll-area";
 import { Button } from "@/components/shadcn/ui/button";
-import {
-  ArrowLeft,
-  Plus,
-  ExternalLink,
-  Trash2,
-  GripVertical,
-} from "lucide-react";
+import {ArrowLeft,Plus,ExternalLink,Trash2,GripVertical,} from "lucide-react";
 import LiveChat from "@/components/LiveChat";
 import LiveIndicator from "./components/LiveIndicator";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/shadcn/ui/dialog";
-import {
-  ModuleConnection,
-  sendModuleAction,
-  sendStreamStatus,
-  StreamConnection,
-} from "@/utils/messaging-client";
+import {Dialog,DialogContent,DialogHeader,DialogTitle,} from "@/components/shadcn/ui/dialog";
+import {ModuleConnection,sendModuleAction,sendStreamStatus,StreamConnection} from "@/utils/messaging-client";
 import { useAppContext } from "@/contexts/AppContext";
 import VideoJSSynced from "@/components/VideoJSSynced";
 import { Components, ComponentItem } from "@/data/componentData";
