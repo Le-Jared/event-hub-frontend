@@ -26,8 +26,8 @@ type RoomDetails = {
   eventName: string;
   code: string;
   password: string;
-  scheduledDate: string; // store as a string for easy formatting
-  scheduledTime: string; // store as a string for easy formatting
+  scheduledDate: string; 
+  scheduledTime: string; 
   createdDate: string;
 };
 

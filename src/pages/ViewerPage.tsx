@@ -1,17 +1,16 @@
-import React, { useState, useEffect } from "react";
 import { Card } from "@/components/shadcn/ui/card";
 import { ScrollArea } from "@/components/shadcn/ui/scroll-area";
-import { Video, Image, FileQuestion } from "lucide-react";
 import LiveChat from "@/components/LiveChat";
 import Chatbot from "@/components/experimental/AIchatbot";
 import LiveIndicator from "./components/LiveIndicator";
-import PollComponent from "./components/PollComponent";
+import RoomDetailsComponent from "./components/RoomDetail";
 import { ModuleConnection, StreamConnection } from "@/utils/messaging-client";
 import { useParams } from "react-router-dom";
 import { ModuleAction, videoSource } from "./EventPage";
 import { Components } from "../data/componentData";
 import { getStreamStatus } from "@/utils/api-client";
 import VideoJSSynced from "@/components/VideoJSSynced";
+import { useEffect, useState } from "react";
 
 interface ComponentItem {
   id: string;
@@ -37,33 +36,14 @@ export interface StatusMessage {
   IS_LIVE?: any;
 }
 
-const componentIcons: { [key: string]: React.ReactNode } = {
-  slide: <Image className="w-6 h-6" />,
-  video: <Video className="w-6 h-6" />,
-  quiz: <FileQuestion className="w-6 h-6" />,
-};
-
 const ViewerPage: React.FC = () => {
-  const [currentComponent, setCurrentComponent] =
-    useState<ComponentItem | null>(null);
+  const [currentComponent, setCurrentComponent] = useState<ComponentItem | null>(null);
   const [streamStatus, setStreamStatus] = useState<StreamStatus>({
     isLive: false,
     viewerCount: 0,
   });
   const { roomId } = useParams();
   const roomID = roomId ? roomId.toString() : "";
-
-  const handlePollVote = (optionId: number) => {
-    // if (socket?.readyState === WebSocket.OPEN) {
-    //   socket.send(
-    //     JSON.stringify({
-    //       type: "POLL_VOTE",
-    //       optionId: optionId,
-    //       room: roomID,
-    //     })
-    //   );
-    // }
-  };
 
   useEffect(() => {
     const cleanupWebSocket = ModuleConnection({
@@ -101,9 +81,9 @@ const ViewerPage: React.FC = () => {
         onReceived: (status) => {
           console.log("Received StatusMessage:", status);
           if (status.TYPE === "START_STREAM") {
-            setStreamStatus((prev) => ({ ...prev, isLive: true }));
+            setStreamStatus((prev: any) => ({ ...prev, isLive: true }));
           } else if (status.TYPE === "STOP_STREAM") {
-            setStreamStatus((prev) => ({ ...prev, isLive: false }));
+            setStreamStatus((prev: any) => ({ ...prev, isLive: false }));
           }
         },
       });
@@ -112,13 +92,11 @@ const ViewerPage: React.FC = () => {
       };
     };
     fetchStreamData();
-    // return cleanupStreamWebSocket;
   }, [roomId]);
 
   const videoJSOptions = {
     sources: [
       {
-        // src: data.videoSource,
         src: videoSource,
         type: "application/x-mpegURL",
       },
@@ -151,9 +129,10 @@ const ViewerPage: React.FC = () => {
                 {currentComponent.type === "slide" && (
                   <div className="carousel w-full">
                     <img
-                    src={currentComponent.imageUrl}
-                    alt={currentComponent.title}
-                    className="w-full" />
+                      src={currentComponent.imageUrl}
+                      alt={currentComponent.title}
+                      className="w-full"
+                    />
                   </div>
                 )}
                 {currentComponent.htmlContent && !currentComponent.imageUrl && (
@@ -178,10 +157,10 @@ const ViewerPage: React.FC = () => {
 
         {/* Right Sidebar */}
         <div className="flex-1 bg-gray-800 shadow-lg flex flex-col">
-          {/* Poll Section */}
+          {/* Room Details Section */}
           <div className="flex-1 overflow-hidden">
             <ScrollArea className="h-full">
-              <PollComponent onVote={handlePollVote} />
+              <RoomDetailsComponent />
             </ScrollArea>
           </div>
 
