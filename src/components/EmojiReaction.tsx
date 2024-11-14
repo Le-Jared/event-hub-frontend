@@ -16,31 +16,8 @@ export type Emoji = {
 
 const EmojiReaction = ({ roomID }: { roomID: string }) => {
   const { user } = useAppContext();
-  const [waiting, setWaiting] = useState<boolean>(false);
-  const [enableCooldown, setEnableCooldown] = useState<boolean>(false);
-  const EMOJI_COOLDOWN_TIME = EMOJI_ClICK_COOLDOWN;
-
-  const emojiCoolDown = () => {
-    setWaiting(true);
-    setTimeout(() => {
-      setWaiting(false);
-    }, EMOJI_COOLDOWN_TIME);
-  };
 
   const sendEmojiReaction = (emojiType: string, roomID: string) => {
-    if (waiting) {
-      toast({
-        title: "Please wait",
-        description: `You can only send one emoji every ${EMOJI_COOLDOWN_TIME / 1000} seconds`,
-        duration: 5000,
-      });
-      return;
-    }
-
-    if (enableCooldown) {
-      emojiCoolDown();
-    } // start timeout for next emoji
-
     console.log("sending " + emojiType);
 
     const emoji = {
@@ -72,13 +49,6 @@ const EmojiReaction = ({ roomID }: { roomID: string }) => {
             {emoji}
           </button>
         ))}
-      </div>
-      <div className="flex items-center space-x-2 text-[#A8A8A8] font-semibold">
-        <Switch
-          id="emoji-cooldown"
-          onCheckedChange={() => setEnableCooldown(!enableCooldown)}
-        />
-        <label htmlFor="emoji-cooldown">Enable Emoji Cooldown</label>
       </div>
     </>
   );
