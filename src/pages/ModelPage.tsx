@@ -22,7 +22,7 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ viewOnly = false }) => {
   const [backgroundColor, setBackgroundColor] = useState<string>('#ffffff');
   const [modelScale, setModelScale] = useState(1);
   const [lightIntensity, setLightIntensity] = useState(0.5);
-  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [, setIsFullscreen] = useState(false);
   const [autoRotate, setAutoRotate] = useState(!viewOnly);
 
   const handleSelectModel = (url: string) => {

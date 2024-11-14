@@ -6,6 +6,7 @@ import { CreateEventFormData } from "@/pages/host/HostCreateEvent.tsx";
 import { StatusMessage } from "@/pages/ViewerPage.tsx";
 
 const API_BASE_URL = "http://localhost:8080";
+const EXPRESS_BASE_URL = 'http://localhost:3000';
 
 export const register = async (formData: RegisterFormData) => {
   const response = await axios
@@ -183,8 +184,8 @@ export const getSubscriptionStatus = async (email: string) => {
 export const sendChatMessage = async (userInput: string) => {
   try {
     const response = await axios.post(
-      `${API_BASE_URL}/api/videochatbot/chat`,
-      { userInput },
+      `${EXPRESS_BASE_URL}/generate-ai`,
+      { prompt: userInput },
       {
         headers: {
           "Content-Type": "application/json",
@@ -193,10 +194,15 @@ export const sendChatMessage = async (userInput: string) => {
       }
     );
     console.log("Chat response:", response.data);
-    return response.data;
+    return response.data.response;
   } catch (error) {
     console.error("Error in sendChatMessage:", error);
-    throw error;
+    if (axios.isAxiosError(error)) {
+      console.error('Axios error:', error.message);
+      console.error('Error response:', error.response);
+      console.error('Error request:', error.request);
+    }
+    throw new Error('Failed to send message. Please check your network connection and try again.');
   }
 };
 
