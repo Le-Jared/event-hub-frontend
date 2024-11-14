@@ -2,7 +2,6 @@ import React from 'react';
 import { Image, FileVideo, Radio, BarChart2, Box } from 'lucide-react';
 import VideoRecorder from '../pages/VideoRecorder';
 import ModelViewer from '../pages/ModelPage';
-import PollView from '@/components/PollView';
 import { PollResponse } from '@/pages/host/HostCreatePoll';
 
 export interface ComponentItem {
@@ -80,7 +79,7 @@ export const Components: ComponentItem[] = [
     icon: <BarChart2 className="w-6 h-6" />,
     content: "Create an interactive poll",
     link: "/poll/:roomId",
-    htmlContent: <PollView roomID="" poll={Poll}/>
+    htmlContent: null,
   },
   {
     id: "5",

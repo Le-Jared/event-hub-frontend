@@ -11,7 +11,8 @@ import {Dialog,DialogContent,DialogHeader,DialogTitle,} from "@/components/shadc
 import {ModuleConnection,sendModuleAction,sendStreamStatus,StreamConnection} from "@/utils/messaging-client";
 import { useAppContext } from "@/contexts/AppContext";
 import VideoJSSynced from "@/components/VideoJSSynced";
-import { Components, ComponentItem } from '@/data/componentData';
+import { Components, ComponentItem, Poll } from '@/data/componentData';
+import PollComponent from "./components/PollComponent";
 
 interface StreamStatus {
   isLive: boolean;
@@ -25,6 +26,7 @@ export interface ModuleAction {
   SESSION_ID: string;
   SENDER: string;
   TIMESTAMP: string;
+  CONTENT?: string;
 }
 
 export const videoSource =
@@ -48,17 +50,27 @@ const EventPage: React.FC = () => {
   const [streamStatus, setStreamStatus] = useState<StreamStatus>({isLive: false,viewerCount: 0,sessionId: roomId,});
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const { user } = useAppContext();
+  const [ voteAction, setVoteAction ] = useState<ModuleAction>();
+  const [poll, setPoll] = useState(Poll);
+  const [pollMode, setPollMode] = useState<"vote"|"result">("vote");
 
   useEffect(() => {
-    
     const cleanupWebSocket = ModuleConnection({
       roomID: roomId ?? "",
       onReceived: (action: ModuleAction) => {
         console.log("Received ModuleAction:", action);
+        if (action.TYPE == "poll_vote" && action.CONTENT) {
+          console.log("test");
+          // const ids = action.CONTENT.split("_");
+          // incrementVote(Number(ids[0]), Number(ids[1]));
+          setVoteAction(action);
+        }
+
         const component = Components.find(
           (component) => component.id === action.ID
         );
         if (component) {
+          
           setCurrentComponent(component);
         }
       },
@@ -174,6 +186,27 @@ const EventPage: React.FC = () => {
     }
   };
 
+  const changeToResultViewForViewers = () => {
+    console.log("will send updated poll to viewers too");
+    sendModuleAction({
+      ID: "55",
+      TYPE: "poll_result",
+      SESSION_ID: roomId ?? "",
+      SENDER: user?.username ?? "",
+      TIMESTAMP: new Date().toISOString(),
+      CONTENT: JSON.stringify(Poll)
+    });
+  }
+
+  // const incrementVote = (pollId: number, pollOptionId: number) => {
+  //   console.log("Increment vote for " + pollOptionId + " in " + pollId);
+  // }
+
+  // const switchToPollResult = () => {
+  //   console.log("switch");
+  //   setPollMode("result");
+  // }
+
   return (
     <div className="flex flex-col h-screen bg-gray-900 text-white">
       {/* Top Navigation Bar */}
@@ -216,9 +249,7 @@ const EventPage: React.FC = () => {
                   {currentComponent ? (
                     <div className="text-center p-6 relative w-full h-full">
                       <div className="mb-4">{currentComponent.icon}</div>
-                      <h2 className="text-xl font-semibold mb-4">
-                        {currentComponent.title}
-                      </h2>
+                      
                       {!currentComponent.htmlContent &&
                         currentComponent.imageUrl && (
                           <img
@@ -238,9 +269,18 @@ const EventPage: React.FC = () => {
                           isHost={true}
                         />
                       )}
-                      <p className="text-white mb-4">
-                        {currentComponent.content}
-                      </p>
+                      {currentComponent.type === "poll" && roomId &&(
+                        <PollComponent
+                          poll={poll}
+                          setPoll={setPoll}
+                          pollMode={pollMode}
+                          setPollMode={setPollMode}
+                          isHost={true}
+                          roomId={roomId}
+                          voteAction={voteAction}
+                          changeToResultViewForViewers={changeToResultViewForViewers}
+                        />
+                      )}
                       <Button
                         onClick={handleRedirectToComponent}
                         className="absolute top-4 right-4"

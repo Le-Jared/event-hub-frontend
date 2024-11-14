@@ -1,20 +1,17 @@
 import React, { useState, useEffect } from "react";
 import { Card } from "@/components/shadcn/ui/card";
 import { ScrollArea } from "@/components/shadcn/ui/scroll-area";
-import { Video, Image, FileQuestion } from "lucide-react";
 import LiveChat from "@/components/LiveChat";
 import Chatbot from "@/components/experimental/AIchatbot";
 import LiveIndicator from "./components/LiveIndicator";
 import PollComponent from "./components/PollComponent";
-import { ModuleConnection, StreamConnection } from "@/utils/messaging-client";
+import { ModuleConnection, sendModuleAction, StreamConnection } from "@/utils/messaging-client";
 import { useParams } from "react-router-dom";
 import { ModuleAction, videoSource } from "./EventPage";
-import PollView from "@/components/PollView";
 import { Components, Poll } from "../data/componentData";
-import { getEventPoll, getStreamStatus } from "@/utils/api-client";
+import { getStreamStatus } from "@/utils/api-client";
 import VideoJSSynced from "@/components/VideoJSSynced";
 import { useAppContext } from "@/contexts/AppContext";
-import { PollResponse } from "./host/HostCreatePoll";
 
 interface ComponentItem {
   id: string;
@@ -40,13 +37,9 @@ export interface StatusMessage {
   IS_LIVE?: any;
 }
 
-const componentIcons: { [key: string]: React.ReactNode } = {
-  slide: <Image className="w-6 h-6" />,
-  video: <Video className="w-6 h-6" />,
-  quiz: <FileQuestion className="w-6 h-6" />,
-};
 
 const ViewerPage: React.FC = () => {
+  const [poll, setPoll] = useState(Poll);
   const [currentComponent, setCurrentComponent] =
     useState<ComponentItem | null>(null);
   const [streamStatus, setStreamStatus] = useState<StreamStatus>({
@@ -56,6 +49,7 @@ const ViewerPage: React.FC = () => {
   const { roomId } = useParams();
   const roomID = roomId ? roomId.toString() : "";
   const { user } = useAppContext();
+  const [pollMode, setPollMode] = useState<"vote"|"result">("vote");
 
 
   useEffect(() => {
@@ -63,17 +57,18 @@ const ViewerPage: React.FC = () => {
       roomID: roomID,
       onReceived: (action: ModuleAction) => {
         console.log("Received ModuleAction:", action);
+        if (action.TYPE == "poll_result" && action.CONTENT) {
+          setPoll(JSON.parse(action.CONTENT))
+          setPollMode("result");
+        }
         const component = Components.find(
           (component) => component.id === action.ID
         );
         if (component) {
-          if (component.type == "poll" && Poll) {
-            component.htmlContent = <PollView roomID={roomID} poll={Poll}/>
-          }
           setCurrentComponent(component);
         }
       },
-      goLive: (isLive: boolean) => {},
+      goLive: (isLive: boolean) => {console.log(isLive)},
     });
 
     return cleanupWebSocket;
@@ -112,9 +107,6 @@ const ViewerPage: React.FC = () => {
     // return cleanupStreamWebSocket;
   }, [roomId]);
 
- 
-  
-
   const videoJSOptions = {
     sources: [
       {
@@ -125,6 +117,16 @@ const ViewerPage: React.FC = () => {
     ],
   };
 
+  const sendPollVote = (pollId: number, optionId: number) => {
+    sendModuleAction({
+      ID: "54",
+      TYPE: "poll_vote",
+      SESSION_ID: roomId ?? "",
+      SENDER: user?.username ?? "",
+      TIMESTAMP: new Date().toISOString(),
+      CONTENT: pollId + "_"  + optionId
+    });
+  };
   
   return (
     <div className="flex flex-col h-screen bg-gray-900 text-white">
@@ -157,6 +159,17 @@ const ViewerPage: React.FC = () => {
                     options={videoJSOptions}
                     roomID={roomId ?? ""}
                     isHost={false}
+                  />
+                )}
+                {currentComponent.type === "poll" && roomId &&(
+                  <PollComponent
+                    poll={poll}
+                    setPoll={setPoll}
+                    isHost={false}
+                    roomId={roomId}
+                    onVoteSubmit={sendPollVote}
+                    pollMode={pollMode}
+                    setPollMode={setPollMode}
                   />
                 )}
               </div>
