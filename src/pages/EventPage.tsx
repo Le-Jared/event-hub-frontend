@@ -4,14 +4,30 @@ import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 import { Card } from "@/components/shadcn/ui/card";
 import { ScrollArea } from "@/components/shadcn/ui/scroll-area";
 import { Button } from "@/components/shadcn/ui/button";
-import {ArrowLeft,Plus,ExternalLink,Trash2,GripVertical} from "lucide-react";
+import {
+  ArrowLeft,
+  Plus,
+  ExternalLink,
+  Trash2,
+  GripVertical,
+} from "lucide-react";
 import LiveChat from "@/components/LiveChat";
 import LiveIndicator from "./components/LiveIndicator";
-import {Dialog,DialogContent,DialogHeader,DialogTitle,} from "@/components/shadcn/ui/dialog";
-import {ModuleConnection,sendModuleAction,sendStreamStatus,StreamConnection} from "@/utils/messaging-client";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/shadcn/ui/dialog";
+import {
+  ModuleConnection,
+  sendModuleAction,
+  sendStreamStatus,
+  StreamConnection,
+} from "@/utils/messaging-client";
 import { useAppContext } from "@/contexts/AppContext";
 import VideoJSSynced from "@/components/VideoJSSynced";
-import { Components, ComponentItem } from '@/data/componentData';
+import { Components, ComponentItem } from "@/data/componentData";
 
 interface StreamStatus {
   isLive: boolean;
@@ -43,9 +59,14 @@ const videoJSOptions = {
 const EventPage: React.FC = () => {
   const { roomId } = useParams<{ roomId: string }>();
   const navigate = useNavigate();
-  const [currentComponent, setCurrentComponent] = useState<ComponentItem | null>(null);
+  const [currentComponent, setCurrentComponent] =
+    useState<ComponentItem | null>(null);
   const [components, setComponents] = useState<ComponentItem[]>(Components);
-  const [streamStatus, setStreamStatus] = useState<StreamStatus>({isLive: false,viewerCount: 0,sessionId: roomId,});
+  const [streamStatus, setStreamStatus] = useState<StreamStatus>({
+    isLive: false,
+    viewerCount: 0,
+    sessionId: roomId,
+  });
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const { user } = useAppContext();
 
@@ -197,20 +218,19 @@ const EventPage: React.FC = () => {
       <DragDropContext onDragEnd={handleDragEnd}>
         <div className="flex flex-1 overflow-hidden">
           {/* Main Stage */}
-          <div className="flex-[3] p-6">
+          <div className="flex-[3] p-6 h-full overflow-hidden">
             <Droppable droppableId="main-stage">
               {(provided, snapshot) => (
                 <Card
                   ref={provided.innerRef}
                   {...provided.droppableProps}
-                  className={`h-full flex items-center justify-center bg-gray-800 transition-colors ${
+                  className={`h-full flex flex-col items-center justify-center bg-gray-800 transition-colors ${
                     snapshot.isDraggingOver ? "border-2 border-blue-500" : ""
-                  }`}
+                  } overflow-hidden`}
                 >
                   {currentComponent ? (
-                    <div className="text-center p-6 relative w-full h-full">
-                      <div className="mb-4">{currentComponent.icon}</div>
-                      <h2 className="text-xl font-semibold mb-4">
+                    <div className="text-center p-2 w-full h-full overflow-hidden flex flex-col place-content-center">
+                      <h2 className="text-xl font-semibold mb-4 text-white">
                         {currentComponent.title}
                       </h2>
                       {!currentComponent.htmlContent &&
@@ -218,19 +238,25 @@ const EventPage: React.FC = () => {
                           <img
                             src={currentComponent.imageUrl}
                             alt={currentComponent.title}
-                            className="mx-auto mb-4 rounded-lg shadow-md w-full h-[400px] object-cover"
+                            className="mx-auto mb-4 rounded-lg shadow-md max-w-full max-h-[80%] object-contain"
                           />
                         )}
                       {currentComponent.htmlContent &&
                         !currentComponent.imageUrl && (
-                          <div>{currentComponent.htmlContent}</div>
+                          <div className="max-w-full max-h-full overflow-auto">
+                            {currentComponent.htmlContent}
+                          </div>
                         )}
                       {currentComponent.type === "video" && (
-                        <VideoJSSynced
-                          options={videoJSOptions}
-                          roomID={roomId ?? ""}
-                          isHost={true}
-                        />
+                        <div className="flex justify-center items-center w-full h-full p-2">
+                          <div className="w-full max-w-[80%] max-h-[80%]">
+                            <VideoJSSynced
+                              options={videoJSOptions}
+                              roomID={roomId ?? ""}
+                              isHost={true}
+                            />
+                          </div>
+                        </div>
                       )}
                       <p className="text-white mb-4">
                         {currentComponent.content}
