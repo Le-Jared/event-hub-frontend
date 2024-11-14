@@ -14,9 +14,10 @@ interface PollComponentProps {
   voteAction?: ModuleAction;
   onVoteSubmit?:  (pollId: number, optionId: number) => void;
   changeToResultViewForViewers?: () => void;
+  changeToPollViewForViewers?: () => void;
 }
 
-const PollComponent: React.FC<PollComponentProps> = ({ roomId, isHost, voteAction, pollMode, poll, setPollMode, onVoteSubmit, changeToResultViewForViewers}) => {
+const PollComponent: React.FC<PollComponentProps> = ({ roomId, isHost, voteAction, pollMode, poll, setPollMode, onVoteSubmit, changeToResultViewForViewers, changeToPollViewForViewers}) => {
   const [count, setCount] = useState(0);
 
   function handleClick() {
@@ -53,6 +54,16 @@ const PollComponent: React.FC<PollComponentProps> = ({ roomId, isHost, voteActio
     setPollMode("result");
   }
 
+  const changeToPollView = () => {
+    if (changeToPollViewForViewers) {
+      changeToPollViewForViewers();
+      switchToPollView();
+    }
+  }
+  const switchToPollView = () => {
+    setPollMode("vote");
+  }
+
   return (
     <div>
       {pollMode === "result" && (
@@ -61,6 +72,8 @@ const PollComponent: React.FC<PollComponentProps> = ({ roomId, isHost, voteActio
           totalVotes={count}
           isHost={isHost}
           changeToResult={changeToResult}
+          changeToView={changeToPollView}
+        
         />
       )}
       {pollMode === "vote" && (

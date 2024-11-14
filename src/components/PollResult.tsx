@@ -8,6 +8,7 @@ interface PollResultProps {
     totalVotes: number;
     isHost: boolean;
     changeToResult?: () => void;
+    changeToView?: () => void;
 }
 
 const PollOptionCard: React.FC<{ pollOption: PollOptionResponse; totalVotes: number; place: number }> = ({ pollOption, totalVotes }) => {
@@ -86,9 +87,24 @@ const PollOptionCard: React.FC<{ pollOption: PollOptionResponse; totalVotes: num
   );
 };
 
-const PollResult: React.FC<PollResultProps> = ({ poll, isHost, changeToResult}) => {
+const PollResult: React.FC<PollResultProps> = ({ poll, isHost, changeToResult, changeToView}) => {
   const totalVotes = poll.pollOptionList.reduce((sum, option) => sum + option.voteCount, 0);
   const sortedOptions = [...poll.pollOptionList].sort((a, b) => b.voteCount - a.voteCount);
+  const [isPollShared, setIsPollShared] = useState<boolean>(false);
+
+ const toggleViewAndResult = () => {
+   
+   if (isPollShared && changeToView) {
+    changeToView();
+    setIsPollShared(false);
+   }
+
+   if (!isPollShared && changeToResult) {
+    changeToResult();
+    setIsPollShared(true);
+   }
+   
+ }
 
   return (
     <div className="text-white">
@@ -105,9 +121,9 @@ const PollResult: React.FC<PollResultProps> = ({ poll, isHost, changeToResult}) 
                 type="button"
                 variant="default"
                 className="w-1/2 text-white py-2 font-alatsi border"
-                onClick={changeToResult}
+                onClick={toggleViewAndResult}
             >
-              Share Poll Result
+              {isPollShared ? "Back to Voting" : "Share Poll Result"}
             </Button>
           )}
         </div>

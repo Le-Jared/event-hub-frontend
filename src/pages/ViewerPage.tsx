@@ -61,6 +61,10 @@ const ViewerPage: React.FC = () => {
           setPoll(JSON.parse(action.CONTENT))
           setPollMode("result");
         }
+        if (action.TYPE == "poll_view" && action.CONTENT) {
+          setPoll(JSON.parse(action.CONTENT))
+          setPollMode("vote");
+        }
         const component = Components.find(
           (component) => component.id === action.ID
         );

@@ -198,6 +198,19 @@ const EventPage: React.FC = () => {
     });
   }
 
+  const changeToPollViewForViewers = () => {
+    console.log("will send updated poll to viewers too");
+    sendModuleAction({
+      ID: "56",
+      TYPE: "poll_view",
+      SESSION_ID: roomId ?? "",
+      SENDER: user?.username ?? "",
+      TIMESTAMP: new Date().toISOString(),
+      CONTENT: JSON.stringify(Poll)
+    });
+  }
+
+
   // const incrementVote = (pollId: number, pollOptionId: number) => {
   //   console.log("Increment vote for " + pollOptionId + " in " + pollId);
   // }
@@ -279,6 +292,7 @@ const EventPage: React.FC = () => {
                           roomId={roomId}
                           voteAction={voteAction}
                           changeToResultViewForViewers={changeToResultViewForViewers}
+                          changeToPollViewForViewers={changeToPollViewForViewers}
                         />
                       )}
                       <Button
