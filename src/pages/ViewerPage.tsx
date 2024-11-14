@@ -164,6 +164,7 @@ const ViewerPage: React.FC = () => {
                     options={videoJSOptions}
                     roomID={roomId ?? ""}
                     isHost={false}
+                    className="w-full h-full max-w-full max-h-full flex justify-center items-center py-4"
                   />
                 )}
               </div>

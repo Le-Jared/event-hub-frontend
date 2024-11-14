@@ -13,20 +13,21 @@ interface IVideoPlayerProps {
   roomID: string;
   isHost: boolean;
   blockDisposePlayer?: boolean;
+  className?: string;
 }
 
-const initialOptions: any = {
-  controls: true,
-  aspectRatio: "16:9",
-  controlBar: {
-    volumePanel: {
-      inline: false,
-    },
-  },
-  plugins: {
-    httpSourceSelector: { default: "low" },
-  },
-};
+// const initialOptions: any = {
+//   controls: true,
+//   aspectRatio: "16:9",
+//   controlBar: {
+//     volumePanel: {
+//       inline: false,
+//     },
+//   },
+//   plugins: {
+//     httpSourceSelector: { default: "low" },
+//   },
+// };
 
 export interface VideoSyncAction {
   actionType: string;
@@ -41,12 +42,26 @@ const VideoJSSynced: React.FC<IVideoPlayerProps> = ({
   roomID,
   isHost,
   blockDisposePlayer,
+  className,
 }) => {
   const videoNode = React.useRef<HTMLVideoElement>(null);
   const playerRef = React.useRef<any>();
   let player: any;
   let isReceived: boolean = false;
   const sender = Date.now().toString();
+
+  const initialOptions: any = {
+    controls: isHost,
+    aspectRatio: "16:9",
+    controlBar: {
+      volumePanel: {
+        inline: false,
+      },
+    },
+    plugins: {
+      httpSourceSelector: { default: "low" },
+    },
+  };
 
   // this stomp client will later be accessed by the
   //const [stompClient, setStompClient] = useState<CompatClient | null>(null);
@@ -218,11 +233,8 @@ const VideoJSSynced: React.FC<IVideoPlayerProps> = ({
   };
 
   return (
-    <div className=" w-full ">
-      <video
-        ref={videoNode}
-        className="video-js vjs-big-play-centered min-h-96"
-      />
+    <div className={`${className}`}>
+      <video ref={videoNode} className="video-js vjs-big-play-centered" />
     </div>
   );
 };
