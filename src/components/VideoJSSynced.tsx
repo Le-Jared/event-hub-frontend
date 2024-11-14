@@ -13,6 +13,7 @@ interface IVideoPlayerProps {
   roomID: string;
   isHost: boolean;
   blockDisposePlayer?: boolean;
+  className?: string;
 }
 
 // const initialOptions: any = {
@@ -41,6 +42,7 @@ const VideoJSSynced: React.FC<IVideoPlayerProps> = ({
   roomID,
   isHost,
   blockDisposePlayer,
+  className,
 }) => {
   const videoNode = React.useRef<HTMLVideoElement>(null);
   const playerRef = React.useRef<any>();
@@ -231,7 +233,7 @@ const VideoJSSynced: React.FC<IVideoPlayerProps> = ({
   };
 
   return (
-    <div className=" w-full h-full max-w-full max-h-full flex justify-center items-center p-2">
+    <div className={`${className}`}>
       <video ref={videoNode} className="video-js vjs-big-play-centered" />
     </div>
   );

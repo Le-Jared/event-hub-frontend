@@ -248,14 +248,13 @@ const EventPage: React.FC = () => {
                           </div>
                         )}
                       {currentComponent.type === "video" && (
-                        <div className="flex justify-center items-center w-full h-full p-2">
-                          <div className="w-full max-w-[80%] max-h-[80%]">
-                            <VideoJSSynced
-                              options={videoJSOptions}
-                              roomID={roomId ?? ""}
-                              isHost={true}
-                            />
-                          </div>
+                        <div className="flex justify-center items-center w-full h-full">
+                          <VideoJSSynced
+                            options={videoJSOptions}
+                            roomID={roomId ?? ""}
+                            isHost={true}
+                            className="w-full h-full max-w-[80%] max-h-[80%] flex justify-center items-center"
+                          />
                         </div>
                       )}
                       <p className="text-white mb-4">
