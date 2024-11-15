@@ -47,7 +47,7 @@ const SlideShow: React.FC<SlideShowProps> = ({
             onClick={handlePrevious}
             className="rounded-full bg-gray-800/50 hover:bg-gray-800/75"
           >
-            <ChevronLeft className="h-6 w-6" />
+            <ChevronLeft className="h-8 w-8 text-white" />
           </Button>
           
           <Button
@@ -56,7 +56,7 @@ const SlideShow: React.FC<SlideShowProps> = ({
             onClick={handleNext}
             className="rounded-full bg-gray-800/50 hover:bg-gray-800/75"
           >
-            <ChevronRight className="h-6 w-6" />
+            <ChevronRight className="h-8 w-8 text-white" />
           </Button>
         </div>
       )}
