@@ -1,11 +1,6 @@
 import React from "react";
-import {
-  createBrowserRouter,
-  Navigate,
-  RouterProvider,
-} from "react-router-dom";
+import {createBrowserRouter,Navigate,RouterProvider} from "react-router-dom";
 import ErrorPage from "@/pages/ErrorPage";
-
 import LandingPage from "@/pages/LandingPage";
 import NotFoundPage from "@/pages/NotFoundPage";
 import WaitingPage from "@/pages/WaitingRoomPage";
@@ -17,6 +12,8 @@ import HostCreateEvent from "@/pages/host/HostCreateEvent";
 import HostManageEvent from "@/pages/host/HostManageEvent";
 import ViewerPage from "@/pages/ViewerPage";
 import Record from "@/pages/VideoRecorder";
+import PigeonPage from "@/pages/PigeonPage";
+import SharedLayout from "./SharedLayout";
 
 const router = createBrowserRouter([
   {
@@ -25,12 +22,13 @@ const router = createBrowserRouter([
     children: [
       {
         index: true,
-        element: null, // SplinePage is rendered in the layout
+        element: null, 
       },
     ],
   },
   {
     path: "/",
+    element: <SharedLayout />,
     errorElement: <ErrorPage />,
     children: [
       {
@@ -56,6 +54,10 @@ const router = createBrowserRouter([
       {
         path: "model",
         element: <ModelPage />,
+      },
+      {
+        path: "pigeon",
+        element: <PigeonPage />,
       },
       {
         path: "record",
