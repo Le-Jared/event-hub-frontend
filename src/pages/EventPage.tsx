@@ -13,6 +13,7 @@ import { useAppContext } from "@/contexts/AppContext";
 import VideoJSSynced from "@/components/VideoJSSynced";
 import { Components, ComponentItem, Poll } from "@/data/componentData";
 import PollComponent from "./components/PollComponent";
+import SlideShow from "./components/SlideShow";
 
 interface StreamStatus {
   isLive: boolean;
@@ -27,6 +28,7 @@ export interface ModuleAction {
   SENDER: string;
   TIMESTAMP: string;
   CONTENT?: string;
+  slideIndex?: number;
 }
 
 export const videoSource =
@@ -45,19 +47,15 @@ const videoJSOptions = {
 const EventPage: React.FC = () => {
   const { roomId } = useParams<{ roomId: string }>();
   const navigate = useNavigate();
-  const [currentComponent, setCurrentComponent] =
-    useState<ComponentItem | null>(null);
+  const [currentComponent, setCurrentComponent] =useState<ComponentItem | null>(null);
   const [components, setComponents] = useState<ComponentItem[]>(Components);
-  const [streamStatus, setStreamStatus] = useState<StreamStatus>({
-    isLive: false,
-    viewerCount: 0,
-    sessionId: roomId,
-  });
+  const [streamStatus, setStreamStatus] = useState<StreamStatus>({isLive: false, viewerCount: 0, sessionId: roomId});
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const { user } = useAppContext();
   const [ voteAction, setVoteAction ] = useState<ModuleAction>();
   const [poll, setPoll] = useState(Poll);
   const [pollMode, setPollMode] = useState<"vote"|"result">("vote");
+  const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
 
   useEffect(() => {
     const cleanupWebSocket = ModuleConnection({
@@ -258,25 +256,25 @@ const EventPage: React.FC = () => {
                       <h2 className="text-xl font-semibold mb-4 text-white">
                         {currentComponent.title}
                       </h2>
-                      {!currentComponent.htmlContent &&
-                        currentComponent.type !== "slide" && 
-                        currentComponent.imageUrl && (
-                          <img
-                            src={currentComponent.imageUrl}
-                            alt={currentComponent.title}
-                            className="mx-auto mb-4 rounded-lg shadow-md max-w-full max-h-[80%] object-contain"
+                      {currentComponent.type === "slide" && currentComponent.images && (
+                        <div className="w-full h-full">
+                          <SlideShow
+                            images={currentComponent.images}
+                            isHost={true}
+                            currentIndex={currentSlideIndex}
+                            onSlideChange={(index) => {
+                              setCurrentSlideIndex(index);
+                              // Broadcast slide change to viewers
+                              sendModuleAction({
+                                ID: currentComponent.id,
+                                TYPE: "slide_change",
+                                SESSION_ID: roomId ?? "",
+                                SENDER: user?.username ?? "",
+                                TIMESTAMP: new Date().toISOString(),
+                                CONTENT: JSON.stringify({ slideIndex: index })
+                              });
+                            }}
                           />
-                        )}
-                      {currentComponent.type === "slide" && (
-                        <div className="carousel w-full">
-                            <img
-                            src={currentComponent.imageUrl}
-                            alt={currentComponent.title}
-                            className="w-full" />
-                            <div className="absolute left-5 right-5 top-1/2 flex -translate-y-1/2 transform justify-between">
-                              <Button className="btn btn-circle" onClick={(e)=> {e.stopPropagation(); handleSlides(currentComponent.next!)}}>❮</Button>
-                              <Button className="btn btn-circle" onClick={(e)=> {e.stopPropagation(); handleSlides(currentComponent.prev!)}}>❯</Button>
-                            </div>
                         </div>
                       )}
                       {currentComponent.htmlContent &&
