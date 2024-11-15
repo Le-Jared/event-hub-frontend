@@ -4,11 +4,7 @@ import LiveChat from "@/components/LiveChat";
 import Chatbot from "@/components/experimental/AIchatbot";
 import LiveIndicator from "./components/LiveIndicator";
 import RoomDetailsComponent from "./components/RoomDetail";
-import {
-  ModuleConnection,
-  sendModuleAction,
-  StreamConnection,
-} from "@/utils/messaging-client";
+import {ModuleConnection,sendModuleAction,StreamConnection} from "@/utils/messaging-client";
 import { useParams } from "react-router-dom";
 import { ModuleAction, videoSource } from "./EventPage";
 import { Components, Poll } from "../data/componentData";
@@ -17,6 +13,7 @@ import VideoJSSynced from "@/components/VideoJSSynced";
 import { useEffect, useState } from "react";
 import { useAppContext } from "@/contexts/AppContext";
 import PollComponent from "./components/PollComponent";
+import QuestionComponent from "./components/QuestionComponent";
 
 interface ComponentItem {
   id: string;
@@ -220,19 +217,22 @@ const ViewerPage: React.FC = () => {
         </div>
 
         {/* Right Sidebar */}
-        <div className="flex-1 bg-gray-800 shadow-lg flex flex-col">
+        <div className="flex-1 bg-gray-800 shadow-lg flex flex-col h-full">
           {/* Room Details Section */}
-          <div className="flex-1 overflow-hidden">
+          <div className="h-[200px] min-h-[200px]">
             <ScrollArea className="h-full">
               <RoomDetailsComponent />
             </ScrollArea>
           </div>
 
+          {/* Questions Section */}
+          <div className="flex-1 border-y border-gray-700 overflow-hidden">
+              <QuestionComponent />
+          </div>
+
           {/* Live Chat */}
-          <div className="flex-1 border-b border-gray-700">
-            <ScrollArea className="h-full">
-              <LiveChat />
-            </ScrollArea>
+          <div className="h-[550px] min-h-[550px]">
+            <LiveChat />
           </div>
         </div>
       </div>
