@@ -4,11 +4,27 @@ import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 import { Card } from "@/components/shadcn/ui/card";
 import { ScrollArea } from "@/components/shadcn/ui/scroll-area";
 import { Button } from "@/components/shadcn/ui/button";
-import { ArrowLeft,Plus,ExternalLink,Trash2,GripVertical } from "lucide-react";
+import {
+  ArrowLeft,
+  Plus,
+  ExternalLink,
+  Trash2,
+  GripVertical,
+} from "lucide-react";
 import LiveChat from "@/components/LiveChat";
 import LiveIndicator from "./components/LiveIndicator";
-import { Dialog,DialogContent,DialogHeader,DialogTitle } from "@/components/shadcn/ui/dialog";
-import { ModuleConnection,sendModuleAction,sendStreamStatus,StreamConnection } from "@/utils/messaging-client";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/shadcn/ui/dialog";
+import {
+  ModuleConnection,
+  sendModuleAction,
+  sendStreamStatus,
+  StreamConnection,
+} from "@/utils/messaging-client";
 import { useAppContext } from "@/contexts/AppContext";
 import VideoJSSynced from "@/components/VideoJSSynced";
 import { Components, ComponentItem, Poll } from "@/data/componentData";
@@ -55,9 +71,9 @@ const EventPage: React.FC = () => {
   });
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const { user } = useAppContext();
-  const [ voteAction, setVoteAction ] = useState<ModuleAction>();
+  const [voteAction, setVoteAction] = useState<ModuleAction>();
   const [poll, setPoll] = useState(Poll);
-  const [pollMode, setPollMode] = useState<"vote"|"result">("vote");
+  const [pollMode, setPollMode] = useState<"vote" | "result">("vote");
 
   useEffect(() => {
     const cleanupWebSocket = ModuleConnection({
@@ -73,7 +89,6 @@ const EventPage: React.FC = () => {
           (component) => component.id === action.ID
         );
         if (component) {
-          
           setCurrentComponent(component);
         }
       },
@@ -85,7 +100,6 @@ const EventPage: React.FC = () => {
   }, [roomId]);
 
   useEffect(() => {
-   
     const cleanupStreamWebSocket = StreamConnection({
       roomID: roomId ?? "",
       onReceived: (status) => {
@@ -108,7 +122,6 @@ const EventPage: React.FC = () => {
       },
     });
     return cleanupStreamWebSocket;
-    
   }, [roomId]);
 
   const handleGoLive = () => {
@@ -128,7 +141,7 @@ const EventPage: React.FC = () => {
       TYPE: component.type,
       SESSION_ID: roomId ?? "",
       SENDER: user?.username ?? "",
-      TIMESTAMP: new Date().toISOString()
+      TIMESTAMP: new Date().toISOString(),
     });
   };
 
@@ -197,9 +210,9 @@ const EventPage: React.FC = () => {
       SESSION_ID: roomId ?? "",
       SENDER: user?.username ?? "",
       TIMESTAMP: new Date().toISOString(),
-      CONTENT: JSON.stringify(Poll)
+      CONTENT: JSON.stringify(Poll),
     });
-  }
+  };
 
   const changeResultToPollViewForViewers = () => {
     console.log("to switch to poll view for viewers");
@@ -209,12 +222,14 @@ const EventPage: React.FC = () => {
       SESSION_ID: roomId ?? "",
       SENDER: user?.username ?? "",
       TIMESTAMP: new Date().toISOString(),
-      CONTENT: JSON.stringify(Poll)
+      CONTENT: JSON.stringify(Poll),
     });
-  }
+  };
 
   const handleSlides = (index: string) => {
-    const selectedSlide = components.filter(component => index == component.id);
+    const selectedSlide = components.filter(
+      (component) => index == component.id
+    );
     setCurrentComponent(selectedSlide[0]);
     sendModuleAction({
       ID: selectedSlide[0].id,
@@ -270,7 +285,7 @@ const EventPage: React.FC = () => {
                         {currentComponent.title}
                       </h2>
                       {!currentComponent.htmlContent &&
-                        currentComponent.type !== "slide" && 
+                        currentComponent.type !== "slide" &&
                         currentComponent.imageUrl && (
                           <img
                             src={currentComponent.imageUrl}
@@ -280,14 +295,31 @@ const EventPage: React.FC = () => {
                         )}
                       {currentComponent.type === "slide" && (
                         <div className="carousel w-full">
-                            <img
+                          <img
                             src={currentComponent.imageUrl}
                             alt={currentComponent.title}
-                            className="w-full" />
-                            <div className="absolute left-5 right-5 top-1/2 flex -translate-y-1/2 transform justify-between">
-                              <Button className="btn btn-circle" onClick={(e)=> {e.stopPropagation(); handleSlides(currentComponent.next!)}}>❮</Button>
-                              <Button className="btn btn-circle" onClick={(e)=> {e.stopPropagation(); handleSlides(currentComponent.prev!)}}>❯</Button>
-                            </div>
+                            className="w-full"
+                          />
+                          <div className="absolute left-5 right-5 top-1/2 flex -translate-y-1/2 transform justify-between">
+                            <Button
+                              className="btn btn-circle"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleSlides(currentComponent.next!);
+                              }}
+                            >
+                              ❮
+                            </Button>
+                            <Button
+                              className="btn btn-circle"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleSlides(currentComponent.prev!);
+                              }}
+                            >
+                              ❯
+                            </Button>
+                          </div>
                         </div>
                       )}
                       {currentComponent.htmlContent &&
@@ -306,7 +338,7 @@ const EventPage: React.FC = () => {
                           />
                         </div>
                       )}
-                      {currentComponent.type === "poll" && roomId &&(
+                      {currentComponent.type === "poll" && roomId && (
                         <PollComponent
                           poll={poll}
                           setPoll={setPoll}
@@ -315,19 +347,23 @@ const EventPage: React.FC = () => {
                           isHost={true}
                           roomId={roomId}
                           voteAction={voteAction}
-                          changeToResultViewForViewers={changePollToResultViewForViewers}
-                          changeToPollViewForViewers={changeResultToPollViewForViewers}
+                          changeToResultViewForViewers={
+                            changePollToResultViewForViewers
+                          }
+                          changeToPollViewForViewers={
+                            changeResultToPollViewForViewers
+                          }
                         />
                       )}
                       <p className="text-white mb-4">
                         {currentComponent.content}
                       </p>
-                      <Button
+                      {/* <Button
                         onClick={handleRedirectToComponent}
                         className="absolute top-4 right-4"
                       >
                         Go to Component
-                      </Button>
+                      </Button> */}
                     </div>
                   ) : (
                     <div

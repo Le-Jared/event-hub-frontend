@@ -4,7 +4,11 @@ import LiveChat from "@/components/LiveChat";
 import Chatbot from "@/components/experimental/AIchatbot";
 import LiveIndicator from "./components/LiveIndicator";
 import RoomDetailsComponent from "./components/RoomDetail";
-import { ModuleConnection, sendModuleAction, StreamConnection } from "@/utils/messaging-client";
+import {
+  ModuleConnection,
+  sendModuleAction,
+  StreamConnection,
+} from "@/utils/messaging-client";
 import { useParams } from "react-router-dom";
 import { ModuleAction, videoSource } from "./EventPage";
 import { Components, Poll } from "../data/componentData";
@@ -40,7 +44,8 @@ export interface StatusMessage {
 
 const ViewerPage: React.FC = () => {
   const [poll, setPoll] = useState(Poll);
-  const [currentComponent, setCurrentComponent] = useState<ComponentItem | null>(null);
+  const [currentComponent, setCurrentComponent] =
+    useState<ComponentItem | null>(null);
   const [streamStatus, setStreamStatus] = useState<StreamStatus>({
     isLive: false,
     viewerCount: 0,
@@ -48,7 +53,7 @@ const ViewerPage: React.FC = () => {
   const { roomId } = useParams();
   const roomID = roomId ? roomId.toString() : "";
   const { user } = useAppContext();
-  const [pollMode, setPollMode] = useState<"vote"|"result">("vote");
+  const [pollMode, setPollMode] = useState<"vote" | "result">("vote");
 
   useEffect(() => {
     const cleanupWebSocket = ModuleConnection({
@@ -57,28 +62,35 @@ const ViewerPage: React.FC = () => {
         console.log("Received ModuleAction:", action);
         // to switch to result view
         if (action.TYPE == "poll_result" && action.CONTENT) {
-          setPoll(JSON.parse(action.CONTENT))
+          setPoll(JSON.parse(action.CONTENT));
           setPollMode("result");
         }
         // to switch to poll view
         if (action.TYPE == "poll_view" && action.CONTENT) {
-          setPoll(JSON.parse(action.CONTENT))
+          setPoll(JSON.parse(action.CONTENT));
           setPollMode("vote");
         }
         const component = Components.find(
           (component) => component.id === action.ID
         );
         if (component) {
-          setCurrentComponent(component);
+          setCurrentComponent({
+            ...component,
+            content: component.content ?? "",
+          });
         }
       },
-      goLive: (isLive: boolean) => {console.log(isLive)},
+      goLive: (isLive: boolean) => {
+        console.log(isLive);
+      },
     });
 
     return cleanupWebSocket;
   }, [roomId]);
 
   useEffect(() => {
+    let cleanupFunction: (() => void) | undefined;
+
     const fetchStreamData = async () => {
       try {
         const currentStatus = await getStreamStatus(roomID);
@@ -91,23 +103,34 @@ const ViewerPage: React.FC = () => {
         console.error("Error fetching stream data:", error);
       }
 
-      const cleanupStreamWebSocket = StreamConnection({
+      cleanupFunction = StreamConnection({
         roomID: roomId ?? "",
         onReceived: (status) => {
           console.log("Received StatusMessage:", status);
           if (status.TYPE === "START_STREAM") {
-            setStreamStatus((prev: any) => ({ ...prev, isLive: true }));
+            setStreamStatus((prev) => ({ ...prev, isLive: true }));
           } else if (status.TYPE === "STOP_STREAM") {
-            setStreamStatus((prev: any) => ({ ...prev, isLive: false }));
+            setStreamStatus((prev) => ({ ...prev, isLive: false }));
+          } else if (
+            status.TYPE === "VIEWER_JOIN" ||
+            status.TYPE === "VIEWER_LEAVE"
+          ) {
+            setStreamStatus((prev) => ({
+              ...prev,
+              viewerCount: status.VIEWER_COUNT ?? prev.viewerCount,
+            }));
           }
         },
       });
-      return () => {
-        cleanupStreamWebSocket();
-      };
     };
-    
+
     fetchStreamData();
+
+    return () => {
+      if (cleanupFunction) {
+        cleanupFunction();
+      }
+    };
   }, [roomId]);
 
   const videoJSOptions = {
@@ -127,10 +150,10 @@ const ViewerPage: React.FC = () => {
       SESSION_ID: roomId ?? "",
       SENDER: user?.username ?? "",
       TIMESTAMP: new Date().toISOString(),
-      CONTENT: pollId + "_"  + optionId
+      CONTENT: pollId + "_" + optionId,
     });
   };
-  
+
   return (
     <div className="flex flex-col h-screen bg-gray-900 text-white">
       {/* Stream Status Bar */}
@@ -147,13 +170,15 @@ const ViewerPage: React.FC = () => {
           <Card className="h-full flex items-center justify-center bg-gray-800">
             {currentComponent ? (
               <div className="text-center p-6 w-full">
-                {currentComponent.imageUrl && currentComponent.type !== "slide" && !currentComponent.htmlContent && (
-                  <img
-                    src={currentComponent.imageUrl}
-                    alt={currentComponent.title}
-                    className="mx-auto mb-4 rounded-lg shadow-md"
-                  />
-                )}
+                {currentComponent.imageUrl &&
+                  currentComponent.type !== "slide" &&
+                  !currentComponent.htmlContent && (
+                    <img
+                      src={currentComponent.imageUrl}
+                      alt={currentComponent.title}
+                      className="mx-auto mb-4 rounded-lg shadow-md"
+                    />
+                  )}
                 {currentComponent.type === "slide" && (
                   <div className="carousel w-full">
                     <img
@@ -174,7 +199,7 @@ const ViewerPage: React.FC = () => {
                     className="w-full h-full max-w-full max-h-full flex justify-center items-center py-4"
                   />
                 )}
-                {currentComponent.type === "poll" && roomId &&(
+                {currentComponent.type === "poll" && roomId && (
                   <PollComponent
                     poll={poll}
                     setPoll={setPoll}

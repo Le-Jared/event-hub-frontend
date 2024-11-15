@@ -216,11 +216,33 @@ export const StreamConnection = (options: StreamClientOptions) => {
   const userToken = localStorage.getItem("watchparty-token");
   let token = userToken?.substring(1, userToken.length - 1);
 
+  const disconnect = () => {
+    if (streamClient && streamClient.connected) {
+      // Notify the server when a viewer leaves
+      sendStreamStatus({
+        TYPE: "VIEWER_LEAVE",
+        SESSION_ID: roomID,
+      });
+
+      streamClient.disconnect(() => {
+        console.log("Disconnected from WebSocket - streamClient");
+      });
+      streamClient = null;
+    }
+  };
+
+  // Handle browser events for cleanup
+  const handleBeforeUnload = () => {
+    disconnect();
+  };
+
   if (!streamClient || !streamClient.connected) {
     streamClient = Stomp.over(
       () => new SockJS(`http://localhost:8080/streamStatus?roomID=${roomID}`)
     );
     streamClient.reconnectDelay = 5000;
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
 
     streamClient.connect(
       {},
@@ -248,18 +270,8 @@ export const StreamConnection = (options: StreamClientOptions) => {
   }
 
   return () => {
-    if (streamClient && streamClient.connected) {
-      // Notify the server when a viewer leaves
-      sendStreamStatus({
-        TYPE: "VIEWER_LEAVE",
-        SESSION_ID: roomID,
-      });
-
-      streamClient.disconnect(() => {
-        console.log("Disconnected from WebSocket - streamClient");
-      });
-      streamClient = null;
-    }
+    window.removeEventListener("beforeunload", handleBeforeUnload);
+    disconnect();
   };
 };
 
