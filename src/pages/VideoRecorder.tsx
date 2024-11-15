@@ -54,11 +54,11 @@ const VideoRecorder: React.FC<VideoRecorderProps> = ({viewOnly}: VideoRecorderPr
   const loadModels = async () => {
     try {
       await Promise.all([
-        faceapi.nets.tinyFaceDetector.loadFromUri('/models'),
-        faceapi.nets.faceLandmark68Net.loadFromUri('/models'),
-        faceapi.nets.faceRecognitionNet.loadFromUri('/models'),
-        faceapi.nets.faceExpressionNet.loadFromUri('/models'),
-        faceapi.nets.ageGenderNet.loadFromUri('/models')
+        faceapi.nets.tinyFaceDetector.loadFromUri('/machinelearning'),
+        faceapi.nets.faceLandmark68Net.loadFromUri('/machinelearning'),
+        faceapi.nets.faceRecognitionNet.loadFromUri('/machinelearning'),
+        faceapi.nets.faceExpressionNet.loadFromUri('/machinelearning'),
+        faceapi.nets.ageGenderNet.loadFromUri('/machinelearning')
       ]);
       showNotification('ML models loaded successfully');
     } catch (error) {
