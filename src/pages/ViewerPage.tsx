@@ -7,22 +7,12 @@ import RoomDetailsComponent from "./components/RoomDetail";
 import { ModuleConnection, sendModuleAction, StreamConnection } from "@/utils/messaging-client";
 import { useParams } from "react-router-dom";
 import { ModuleAction, videoSource } from "./EventPage";
-import { Components, Poll } from "../data/componentData";
 import { getStreamStatus } from "@/utils/api-client";
 import VideoJSSynced from "@/components/VideoJSSynced";
 import { useEffect, useState } from "react";
 import { useAppContext } from "@/contexts/AppContext";
 import PollComponent from "./components/PollComponent";
-
-interface ComponentItem {
-  id: string;
-  type: string;
-  title: string;
-  icon: React.ReactNode;
-  content: string;
-  imageUrl?: string;
-  htmlContent?: any;
-}
+import { Components, ComponentItem, Poll } from "@/data/componentData";
 
 interface StreamStatus {
   isLive: boolean;
@@ -197,17 +187,17 @@ const ViewerPage: React.FC = () => {
         {/* Right Sidebar */}
         <div className="flex-1 bg-gray-800 shadow-lg flex flex-col">
           {/* Room Details Section */}
-          <div className="flex-1 overflow-hidden">
-            <ScrollArea className="h-full">
+          <div className="h-[35%] p-2 border-t border-gray-700">
+            <Card className="h-[calc(100%)] overflow-y-auto bg-gray-700 text-white">
               <RoomDetailsComponent />
-            </ScrollArea>
+            </Card>
           </div>
 
           {/* Live Chat */}
-          <div className="flex-1 border-b border-gray-700">
-            <ScrollArea className="h-full">
+          <div className="h-[65%] p-2 border-t border-gray-700">
+            <Card className="h-[calc(100%)] overflow-y-auto bg-gray-700 text-white">
               <LiveChat />
-            </ScrollArea>
+            </Card>
           </div>
         </div>
       </div>

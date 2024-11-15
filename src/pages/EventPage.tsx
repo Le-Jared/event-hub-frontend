@@ -322,12 +322,6 @@ const EventPage: React.FC = () => {
                       <p className="text-white mb-4">
                         {currentComponent.content}
                       </p>
-                      <Button
-                        onClick={handleRedirectToComponent}
-                        className="absolute top-4 right-4"
-                      >
-                        Go to Component
-                      </Button>
                     </div>
                   ) : (
                     <div
