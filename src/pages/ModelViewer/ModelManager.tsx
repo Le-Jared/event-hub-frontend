@@ -2,15 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/shadcn/ui/button";
 import { Input } from "@/components/shadcn/ui/input";
 import { Label } from "@/components/shadcn/ui/label";
-import { Upload, Trash2, FolderOpen } from 'lucide-react';
+import { FolderOpen, Trash2 } from 'lucide-react';
 
 interface ModelFile {
   name: string;
-  url: string;
+  data: string; 
 }
 
 interface ModelManagerProps {
-  onSelectModel: (url: string) => void;
+  onSelectModel: (data: string) => void;
 }
 
 const ModelManager: React.FC<ModelManagerProps> = ({ onSelectModel }) => {
@@ -28,45 +28,45 @@ const ModelManager: React.FC<ModelManagerProps> = ({ onSelectModel }) => {
     setModels(updatedModels);
   };
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      const url = URL.createObjectURL(file);
-      const newModel: ModelFile = { name: file.name, url };
-      const updatedModels = [...models, newModel];
-      saveModels(updatedModels);
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const base64Data = e.target?.result as string;
+        const newModel: ModelFile = {
+          name: file.name,
+          data: base64Data
+        };
+        const updatedModels = [...models, newModel];
+        saveModels(updatedModels);
+      };
+      reader.readAsDataURL(file);
     }
   };
 
   const handleDeleteModel = (modelToDelete: ModelFile) => {
-    const updatedModels = models.filter(model => model.url !== modelToDelete.url);
+    const updatedModels = models.filter(model => model.name !== modelToDelete.name);
     saveModels(updatedModels);
-    URL.revokeObjectURL(modelToDelete.url); 
   };
 
   return (
     <div className="bg-white rounded-lg shadow-lg p-4">
       <h2 className="text-2xl font-bold mb-4">Model Manager</h2>
       
-      {/* File Upload */}
       <div className="mb-6">
         <Label htmlFor="model-upload">Upload 3D Model</Label>
-        <div className="flex gap-2 mt-2">
+        <div className="mt-2">
           <Input
             type="file"
             id="model-upload"
             accept=".glb,.gltf"
             onChange={handleFileUpload}
-            className="flex-1"
+            className="w-full"
           />
-          <Button>
-            <Upload className="mr-2 h-4 w-4" />
-            Upload
-          </Button>
         </div>
       </div>
 
-      {/* Model List */}
       <div>
         <h3 className="text-lg font-semibold mb-2">Uploaded Models</h3>
         {models.length === 0 ? (
@@ -74,13 +74,13 @@ const ModelManager: React.FC<ModelManagerProps> = ({ onSelectModel }) => {
         ) : (
           <ul className="space-y-2">
             {models.map((model) => (
-              <li key={model.url} className="flex items-center justify-between bg-gray-100 p-2 rounded">
+              <li key={model.name} className="flex items-center justify-between bg-gray-100 p-2 rounded">
                 <span className="truncate flex-1">{model.name}</span>
                 <div>
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => onSelectModel(model.url)}
+                    onClick={() => onSelectModel(model.data)}
                   >
                     <FolderOpen className="h-4 w-4" />
                   </Button>

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Image, FileVideo, Radio, BarChart2, Box } from 'lucide-react';
 import VideoRecorder from '../pages/VideoRecorder';
-import ModelViewer from '../pages/ModelPage';
+import ViewOnlyModelViewer from '@/pages/ModelViewer/ViewOnlyModelViewer';
 import { PollResponse } from '@/pages/host/HostCreatePoll';
 
 export interface ComponentItem {
@@ -9,7 +9,7 @@ export interface ComponentItem {
   type: string;
   title: string;
   icon: React.ReactNode;
-  content: string;
+  content?: string;
   imageUrl?: string;
   htmlContent?: React.ReactNode;
   link: string;
@@ -90,9 +90,8 @@ export const Components: ComponentItem[] = [
     type: "model",
     title: "3D Model",
     icon: <Box className="w-6 h-6" />,
-    content: "Upload 3D Model",
     link: "/model",
-    htmlContent: <ModelViewer viewOnly />,
+    htmlContent: <ViewOnlyModelViewer />,
   },
   {
     id: "6",
