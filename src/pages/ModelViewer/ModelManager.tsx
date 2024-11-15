@@ -11,9 +11,10 @@ interface ModelFile {
 
 interface ModelManagerProps {
   onSelectModel: (data: string) => void;
+  onClearModel: () => void;
 }
 
-const ModelManager: React.FC<ModelManagerProps> = ({ onSelectModel }) => {
+const ModelManager: React.FC<ModelManagerProps> = ({ onSelectModel, onClearModel }) => {
   const [models, setModels] = useState<ModelFile[]>([]);
 
   useEffect(() => {
@@ -42,16 +43,18 @@ const ModelManager: React.FC<ModelManagerProps> = ({ onSelectModel }) => {
         saveModels(updatedModels);
       };
       reader.readAsDataURL(file);
+      event.target.value = '';
     }
   };
 
   const handleDeleteModel = (modelToDelete: ModelFile) => {
     const updatedModels = models.filter(model => model.name !== modelToDelete.name);
     saveModels(updatedModels);
+    onClearModel();
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-lg p-4">
+    <div className="bg-gray-800 text-white rounded-lg shadow-lg p-4">
       <h2 className="text-2xl font-bold mb-4">Model Manager</h2>
       
       <div className="mb-6">
@@ -75,14 +78,14 @@ const ModelManager: React.FC<ModelManagerProps> = ({ onSelectModel }) => {
           <ul className="space-y-2">
             {models.map((model) => (
               <li key={model.name} className="flex items-center justify-between bg-gray-100 p-2 rounded">
-                <span className="truncate flex-1">{model.name}</span>
+                <span className="truncate flex-1 text-gray-900">{model.name}</span>
                 <div>
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => onSelectModel(model.data)}
                   >
-                    <FolderOpen className="h-4 w-4" />
+                    <FolderOpen className="h-4 w-4 text-gray-900" />
                   </Button>
                   <Button
                     variant="ghost"

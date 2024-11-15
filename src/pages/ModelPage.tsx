@@ -23,19 +23,16 @@ const ModelViewer = () => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [modelData, setModelData] = useState<string>('');
 
-  // Convert base64 data to blob URL when modelData changes
+
   useEffect(() => {
     if (modelData) {
       try {
-        // Remove data URL prefix if it exists
         const base64Data = modelData.includes(',') ? modelData.split(',')[1] : modelData;
         const blob = new Blob([Buffer.from(base64Data, 'base64')], { 
           type: 'model/gltf-binary' 
         });
         const url = URL.createObjectURL(blob);
         setModelUrl(url);
-
-        // Cleanup
         return () => {
           URL.revokeObjectURL(url);
         };
@@ -47,6 +44,11 @@ const ModelViewer = () => {
 
   const handleSelectModel = (data: string) => {
     setModelData(data);
+  };
+
+  const clearModel = () => {
+    setModelUrl('');
+    setModelData('');
   };
   
   const saveConfiguration = () => {
@@ -76,7 +78,6 @@ const ModelViewer = () => {
     }
   };
 
-  // Load saved configuration on component mount
   useEffect(() => {
     loadConfiguration();
   }, []);
@@ -92,9 +93,9 @@ const ModelViewer = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-100 p-4">
+    <div className="bg-gray-900 flex min-h-screen bg-gray-100 p-4">
       {/* Left side - Model Viewer */}
-      <div className="flex-1 bg-white rounded-lg shadow-lg mr-4 relative">
+      <div className="flex-1 rounded-lg shadow-lg mr-4 relative" style={{ backgroundColor: backgroundColor }}>
         {modelUrl ? (
           <>
             <Canvas style={{ height: '80vh' }}>
@@ -112,6 +113,7 @@ const ModelViewer = () => {
               <Button
                 variant="secondary"
                 size="sm"
+                className="bg-gray-800 text-white"
                 onClick={() => setModelScale(s => Math.max(0.1, s - 0.1))}
               >
                 <ZoomOut className="h-4 w-4" />
@@ -119,6 +121,7 @@ const ModelViewer = () => {
               <Button
                 variant="secondary"
                 size="sm"
+                className="bg-gray-800 text-white"
                 onClick={() => setModelScale(s => s + 0.1)}
               >
                 <ZoomIn className="h-4 w-4" />
@@ -126,6 +129,7 @@ const ModelViewer = () => {
               <Button
                 variant="secondary"
                 size="sm"
+                className="bg-gray-800 text-white"
                 onClick={() => setAutoRotate(!autoRotate)}
               >
                 <RotateCw className={`h-4 w-4 ${autoRotate ? 'text-blue-500' : ''}`} />
@@ -133,12 +137,14 @@ const ModelViewer = () => {
               <Button
                 variant="secondary"
                 size="sm"
+                className="bg-gray-800 text-white"
                 onClick={toggleFullscreen}
               >
                 <Maximize2 className="h-4 w-4" />
               </Button>
               <Button
                 variant="secondary"
+                className="bg-gray-800 text-white"
                 size="sm"
                 onClick={saveConfiguration}
                 disabled={!modelUrl}
@@ -155,10 +161,10 @@ const ModelViewer = () => {
       </div>
 
       {/* Right side - Controls and Model Manager */}
-      <div className="w-96 space-y-4">
-        <ModelManager onSelectModel={handleSelectModel} />
+      <div className="bg-gray-700 w-96 space-y-4">
+        <ModelManager onSelectModel={handleSelectModel} onClearModel={clearModel} />
 
-        <div className="bg-white rounded-lg shadow-lg p-4">
+        <div className="bg-gray-800 text-white rounded-lg shadow-lg p-4">
           <h2 className="text-2xl font-bold mb-4">Viewer Controls</h2>
 
           {/* Background Color */}
@@ -176,7 +182,7 @@ const ModelViewer = () => {
                 type="text"
                 value={backgroundColor}
                 onChange={(e) => setBackgroundColor(e.target.value)}
-                className="flex-1"
+                className="flex-1 text-gray-900"
                 placeholder="#ffffff"
               />
             </div>
@@ -201,7 +207,7 @@ const ModelViewer = () => {
           </div>
 
           {/* Instructions */}
-          <div className="mt-8 text-sm text-gray-600">
+          <div className="mt-8 text-sm text-white">
             <h3 className="font-semibold mb-2">Instructions:</h3>
             <ul className="list-disc list-inside space-y-1">
               <li>Upload models using the Model Manager</li>

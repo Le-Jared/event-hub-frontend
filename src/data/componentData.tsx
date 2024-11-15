@@ -13,8 +13,8 @@ export interface ComponentItem {
   imageUrl?: string;
   htmlContent?: React.ReactNode;
   link: string;
-  next?: string;
-  prev?: string;
+  images?: string[];  
+  currentImageIndex?: number;  
 }
 
 export const Poll: PollResponse = {
@@ -51,13 +51,17 @@ export const Components: ComponentItem[] = [
   {
     id: "1",
     type: "slide",
-    title: "Slide",
+    title: "Slide Presentation",
     icon: <Image className="w-6 h-6" />,
     content: "Welcome to the presentation!",
-    imageUrl: "https://picsum.photos/id/0/600/300",
-    link: "/slide/1",
-    next: "6",
-    prev: "8"
+    images: [
+      "https://picsum.photos/id/0/600/300",
+      "https://picsum.photos/id/1/600/300",
+      "https://picsum.photos/id/2/600/300",
+      // Add more images as needed
+    ],
+    currentImageIndex: 0,
+    link: "/slide",
   },
   {
     id: "2",
@@ -92,38 +96,5 @@ export const Components: ComponentItem[] = [
     icon: <Box className="w-6 h-6" />,
     link: "/model",
     htmlContent: <ViewOnlyModelViewer />,
-  },
-  {
-    id: "6",
-    type: "slide",
-    title: "Slide",
-    icon: <Image className="w-6 h-6" />,
-    content: "Welcome to the presentation!",
-    imageUrl: "https://picsum.photos/id/1/600/300",
-    link: "/slide/6",
-    next: "7",
-    prev: "1"
-  },
-  {
-    id: "7",
-    type: "slide",
-    title: "Slide",
-    icon: <Image className="w-6 h-6" />,
-    content: "Welcome to the presentation!",
-    imageUrl: "https://picsum.photos/id/2/600/300",
-    link: "/slide/7",
-    next: "8",
-    prev: "6"
-  },
-  {
-    id: "8",
-    type: "slide",
-    title: "Slide",
-    icon: <Image className="w-6 h-6" />,
-    content: "Welcome to the presentation!",
-    imageUrl: "https://picsum.photos/id/3/600/300",
-    link: "/slide/8",
-    next: "1",
-    prev: "7"
   },
 ];
