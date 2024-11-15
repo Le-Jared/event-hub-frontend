@@ -1,14 +1,15 @@
 import React from 'react';
 import { Image, FileVideo, Radio, BarChart2, Box } from 'lucide-react';
 import VideoRecorder from '../pages/VideoRecorder';
-import ModelViewer from '../pages/ModelPage';
+import ModelViewer from '@/pages/ModelPage';
+import { ModelProvider } from '@/pages/ModelViewer/ModelContext';
 
 export interface ComponentItem {
   id: string;
   type: string;
   title: string;
   icon: React.ReactNode;
-  content: string;
+  content?: string;
   imageUrl?: string;
   htmlContent?: React.ReactNode;
   link: string;
@@ -59,9 +60,12 @@ export const Components: ComponentItem[] = [
     type: "model",
     title: "3D Model",
     icon: <Box className="w-6 h-6" />,
-    content: "Upload 3D Model",
     link: "/model",
-    htmlContent: <ModelViewer viewOnly />,
+    htmlContent: (
+      <ModelProvider>
+        <ModelViewer />
+      </ModelProvider>
+    ),
   },
   {
     id: "6",

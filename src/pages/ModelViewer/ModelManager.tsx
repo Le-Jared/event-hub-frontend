@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/shadcn/ui/button";
 import { Input } from "@/components/shadcn/ui/input";
 import { Label } from "@/components/shadcn/ui/label";
-import { Upload, Trash2, FolderOpen } from 'lucide-react';
+import { FolderOpen, Trash2 } from 'lucide-react';
 
 interface ModelFile {
   name: string;
@@ -51,18 +51,14 @@ const ModelManager: React.FC<ModelManagerProps> = ({ onSelectModel }) => {
       {/* File Upload */}
       <div className="mb-6">
         <Label htmlFor="model-upload">Upload 3D Model</Label>
-        <div className="flex gap-2 mt-2">
+        <div className="mt-2">
           <Input
             type="file"
             id="model-upload"
             accept=".glb,.gltf"
             onChange={handleFileUpload}
-            className="flex-1"
+            className="w-full"
           />
-          <Button>
-            <Upload className="mr-2 h-4 w-4" />
-            Upload
-          </Button>
         </div>
       </div>
 
