@@ -2,114 +2,86 @@ import { RadioGroup, RadioGroupItem } from "./shadcn/ui/radio-group"
 import { Button } from "./shadcn/ui/button";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { PollOptionResponse, PollResponse } from "@/pages/WatchPartyPage";
-import { useNavigate } from "react-router-dom";
+import { PollOptionResponse, PollResponse } from "@/pages/host/HostCreatePoll";
 
 interface PollViewProps {
-    poll: PollResponse;
-    optionChecked: PollOptionResponse|null;
-    voteSaved: boolean;
-    setOptionChecked: (optionChecked: PollOptionResponse) => void;
-    onCreateVote: () => void;
-    onChangeVote: () => void;
-    watchPartyCode: string;
+    poll?: PollResponse;
+    roomID: string;
+    isHost: boolean;
+    onVoteSubmit?:  (pollId: number, optionId: number) => void;
+    onClickViewResult?: () => void;
 };
 
 type PollOptionProps = {
     pollOptionView: PollOptionResponse;
-    voteable: boolean;
     optionChecked: PollOptionResponse|null;
     setOptionChecked: (optionChecked: PollOptionResponse) => void;
 };
-  
-export const PollView : React.FC<PollViewProps> = ({ poll, optionChecked, onCreateVote, onChangeVote, setOptionChecked, voteSaved, watchPartyCode }) => {
-    const [voteable, setVoteable] = useState(!poll?.voted);
-    const navigate = useNavigate();
+ 
+export const PollView : React.FC<PollViewProps> = ({ poll, isHost, onVoteSubmit, onClickViewResult }) => {
+    const [optionChecked, setOptionChecked] = useState<PollOptionResponse|null>(null);
+    const [voted, setVoted] = useState<boolean>(false);
 
-    function voteCreate() {
-        setVoteable(false);
-        onCreateVote();
+    function selectOption() {
+        if(poll && optionChecked && onVoteSubmit) {
+            onVoteSubmit(poll.pollId, optionChecked.pollOptionId)
+            setVoted(true);
+        }
     }
-
-    function voteUpdate() {
-        setVoteable(false);
-        onChangeVote();
-    }
-
-    function viewPollResult () {
-        // navigate to poll result page
-        navigate("/view-poll-results",
-            {
-              state : {
-                watchPartyCode: watchPartyCode
-              }
-            }
-        );
-    }
-    
     return (
-        <div>
+        <div className="text-white justify-center w-full max-w-6xl mx-auto p-6">
             <form className="space-y-4 text-white">
                 <div>
                     {/* RETRIEVE POLL QUESTION AND ITS OPTIONS */}
-                    <h1 className="text-3xl md:text-4xl font-bold mb-2">Poll</h1>
-                    <h2 className="text-xl md:text-2xl font-semibold">{poll.pollQuestion}</h2>
-                    <p className="text-white mb-6">*Select the option you want to vote for and click "Submit Vote"</p>
+                    <h1 className="text-3xl md:text-4xl font-bold mb-2">{poll?.pollQuestion}</h1>
+                    <h2 className="text-xl md:text-2xl font-semibold mb-2">*Select the option you want to vote for and click "Submit Vote"</h2>
                     <RadioGroup 
-                        onValueChange={() => voteable && optionChecked && setOptionChecked(optionChecked)}
+                        onValueChange={() => optionChecked && setOptionChecked(optionChecked)}
                     >
-                        <div className="flex items-center space-x-2">
-                        {poll.pollOptionList.map((option, id) => 
+                        <div className="flex items-center space-x-2 justify-center">
+                        {poll?.pollOptionList.map((option, id) => 
                             <PollOptionView
                                 key={id}
                                 pollOptionView={option}
                                 optionChecked={optionChecked}
                                 setOptionChecked={setOptionChecked}
-                                voteable={voteable}
                             />
                         )}
                         </div>
                     </RadioGroup>
                 </div>
-                {/* CREATE VOTE BUTTON */}
-                {!voteSaved && 
+                {/* CREATE VOTE BUTTON - ONLY FOR VIEWERS TO VOTE */}
+                {!isHost &&
                     <Button
                         type="button"
                         variant="secondary"
-                        className="w-full py-2 font-alatsi"
-                        disabled={optionChecked == null || poll?.voted}
-                        onClick={voteCreate}
+                        className="w-1/2 py-2 font-alatsi"
+                        disabled={optionChecked == null || voted}
+                        onClick={selectOption}
                     >
                         Submit Vote
                     </Button>
                 }
                 
-                {/* CHANGE VOTE BUTTON */}
-                {voteSaved &&
+                {/* VIEW POLL RESULT BUTTON - ONLY FOR HOST TO VIEW RESULT OF ONGOING POLL */}
+                {isHost &&
                     <div className="space-y-4">
                         <Button
-                        type="button"
-                        variant="secondary"
-                        className="w-full text-base py-2 font-alatsi border"
-                        onClick={!voteable ? () => setVoteable(true) : voteUpdate}
-                        >
-                            {!voteable ? "Change Vote" : "Update Vote"}
+                            type="button"
+                            variant="default"
+                            className="w-1/2 text-white py-2 font-alatsi border"
+                            onClick={onClickViewResult}
+                            >
+                            View Poll Result
                         </Button>
                     </div>
                 }
-
-                {/* VIEW POLL RESULT BUTTON */}
-                <div className="space-y-4">
-                        <Button
-                        type="button"
-                        variant="default"
-                        className="w-full text-white py-2 font-alatsi border"
-                        onClick={viewPollResult}
-                        >
-                           View Poll Result
-                        </Button>
-                </div>
             </form>
+            {voted && !isHost && (
+                <div className="mt-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded">
+                <p>Thank you for voting!</p>
+                </div>
+            )}
       </div>
     );
 };
@@ -117,8 +89,7 @@ export const PollView : React.FC<PollViewProps> = ({ poll, optionChecked, onCrea
 export const PollOptionView = ({
     pollOptionView,
     optionChecked,
-    setOptionChecked,
-    voteable
+    setOptionChecked
 }: PollOptionProps) => {
     const image = pollOptionView.imageUrl ?  "http://localhost:8080/pollOptionImages/" + pollOptionView.imageUrl : null;
     const [isOverflowing, setIsOverflowing] = useState(false);
@@ -146,9 +117,9 @@ export const PollOptionView = ({
     
     return (
         <div 
-            style={{width: 240}}
+            style={{width: 250}}
             className={`${optionChecked?.value == pollOptionView.value ? 'bg-green-500' : 'bg-gray-800'} rounded-lg shadow-lg overflow-hidden flex flex-col h-full border border-gray-700`}
-            onClick={() => voteable && setOptionChecked(pollOptionView)}
+            onClick={() => setOptionChecked(pollOptionView)}
         >
             <RadioGroupItem
                 style={{backgroundColor: "white"}}
