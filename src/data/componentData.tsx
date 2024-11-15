@@ -13,6 +13,8 @@ export interface ComponentItem {
   imageUrl?: string;
   htmlContent?: React.ReactNode;
   link: string;
+  next?: string;
+  prev?: string;
 }
 
 export const Poll: PollResponse = {
@@ -52,8 +54,10 @@ export const Components: ComponentItem[] = [
     title: "Slide",
     icon: <Image className="w-6 h-6" />,
     content: "Welcome to the presentation!",
-    imageUrl: "https://picsum.photos/seed/picsum/600/400",
+    imageUrl: "https://picsum.photos/id/0/600/300",
     link: "/slide/1",
+    next: "6",
+    prev: "8"
   },
   {
     id: "2",
@@ -89,5 +93,38 @@ export const Components: ComponentItem[] = [
     content: "Upload 3D Model",
     link: "/model",
     htmlContent: <ModelViewer viewOnly />,
+  },
+  {
+    id: "6",
+    type: "slide",
+    title: "Slide",
+    icon: <Image className="w-6 h-6" />,
+    content: "Welcome to the presentation!",
+    imageUrl: "https://picsum.photos/id/1/600/300",
+    link: "/slide/6",
+    next: "7",
+    prev: "1"
+  },
+  {
+    id: "7",
+    type: "slide",
+    title: "Slide",
+    icon: <Image className="w-6 h-6" />,
+    content: "Welcome to the presentation!",
+    imageUrl: "https://picsum.photos/id/2/600/300",
+    link: "/slide/7",
+    next: "8",
+    prev: "6"
+  },
+  {
+    id: "8",
+    type: "slide",
+    title: "Slide",
+    icon: <Image className="w-6 h-6" />,
+    content: "Welcome to the presentation!",
+    imageUrl: "https://picsum.photos/id/3/600/300",
+    link: "/slide/8",
+    next: "1",
+    prev: "7"
   },
 ];

@@ -1,16 +1,16 @@
-import React, { useState, useEffect } from "react";
 import { Card } from "@/components/shadcn/ui/card";
 import { ScrollArea } from "@/components/shadcn/ui/scroll-area";
 import LiveChat from "@/components/LiveChat";
 import Chatbot from "@/components/experimental/AIchatbot";
 import LiveIndicator from "./components/LiveIndicator";
-import PollComponent from "./components/PollComponent";
+import RoomDetailsComponent from "./components/RoomDetail";
 import { ModuleConnection, sendModuleAction, StreamConnection } from "@/utils/messaging-client";
 import { useParams } from "react-router-dom";
 import { ModuleAction, videoSource } from "./EventPage";
 import { Components, Poll } from "../data/componentData";
 import { getStreamStatus } from "@/utils/api-client";
 import VideoJSSynced from "@/components/VideoJSSynced";
+import { useEffect, useState } from "react";
 import { useAppContext } from "@/contexts/AppContext";
 
 interface ComponentItem {
@@ -40,8 +40,7 @@ export interface StatusMessage {
 
 const ViewerPage: React.FC = () => {
   const [poll, setPoll] = useState(Poll);
-  const [currentComponent, setCurrentComponent] =
-    useState<ComponentItem | null>(null);
+  const [currentComponent, setCurrentComponent] = useState<ComponentItem | null>(null);
   const [streamStatus, setStreamStatus] = useState<StreamStatus>({
     isLive: false,
     viewerCount: 0,
@@ -96,9 +95,9 @@ const ViewerPage: React.FC = () => {
         onReceived: (status) => {
           console.log("Received StatusMessage:", status);
           if (status.TYPE === "START_STREAM") {
-            setStreamStatus((prev) => ({ ...prev, isLive: true }));
+            setStreamStatus((prev: any) => ({ ...prev, isLive: true }));
           } else if (status.TYPE === "STOP_STREAM") {
-            setStreamStatus((prev) => ({ ...prev, isLive: false }));
+            setStreamStatus((prev: any) => ({ ...prev, isLive: false }));
           }
         },
       });
@@ -108,13 +107,11 @@ const ViewerPage: React.FC = () => {
     };
     
     fetchStreamData();
-    // return cleanupStreamWebSocket;
   }, [roomId]);
 
   const videoJSOptions = {
     sources: [
       {
-        // src: data.videoSource,
         src: videoSource,
         type: "application/x-mpegURL",
       },
@@ -148,12 +145,21 @@ const ViewerPage: React.FC = () => {
           <Card className="h-full flex items-center justify-center bg-gray-800">
             {currentComponent ? (
               <div className="text-center p-6 w-full">
-                {currentComponent.imageUrl && !currentComponent.htmlContent && (
+                {currentComponent.imageUrl && currentComponent.type !== "slide" && !currentComponent.htmlContent && (
                   <img
                     src={currentComponent.imageUrl}
                     alt={currentComponent.title}
                     className="mx-auto mb-4 rounded-lg shadow-md"
                   />
+                )}
+                {currentComponent.type === "slide" && (
+                  <div className="carousel w-full">
+                    <img
+                      src={currentComponent.imageUrl}
+                      alt={currentComponent.title}
+                      className="w-full"
+                    />
+                  </div>
                 )}
                 {currentComponent.htmlContent && !currentComponent.imageUrl && (
                   <div>{currentComponent.htmlContent}</div>
@@ -163,6 +169,7 @@ const ViewerPage: React.FC = () => {
                     options={videoJSOptions}
                     roomID={roomId ?? ""}
                     isHost={false}
+                    className="w-full h-full max-w-full max-h-full flex justify-center items-center py-4"
                   />
                 )}
                 {currentComponent.type === "poll" && roomId &&(
@@ -187,6 +194,13 @@ const ViewerPage: React.FC = () => {
 
         {/* Right Sidebar */}
         <div className="flex-1 bg-gray-800 shadow-lg flex flex-col">
+          {/* Room Details Section */}
+          <div className="flex-1 overflow-hidden">
+            <ScrollArea className="h-full">
+              <RoomDetailsComponent />
+            </ScrollArea>
+          </div>
+
           {/* Live Chat */}
           <div className="flex-1 border-b border-gray-700">
             <ScrollArea className="h-full">
