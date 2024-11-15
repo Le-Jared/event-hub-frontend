@@ -5,18 +5,28 @@ import { Button } from "@/components/shadcn/ui/button";
 import { ArrowLeft } from "lucide-react";
 import LiveChat from "@/components/LiveChat";
 import LiveIndicator from "./components/LiveIndicator";
-import { ModuleConnection, StreamConnection } from "@/utils/messaging-client";
+import { ModuleConnection, sendModuleAction, StreamConnection } from "@/utils/messaging-client";
 import VideoJSSynced from "@/components/VideoJSSynced";
 import { Components, ComponentItem, Poll } from "@/data/componentData";
 import PollComponent from "./components/PollComponent";
 import SlideShow from "./components/SlideShow";
 import RoomDetailsComponent from "./components/RoomDetail";
 import AIchatbot from "@/components/experimental/AIchatbot";
+import { useAppContext } from "@/contexts/AppContext";
+import { getStreamStatus } from "@/utils/api-client";
 
 interface StreamStatus {
   isLive: boolean;
   viewerCount: number;
-  sessionId?: string;
+  roomId?: string;
+}
+
+export interface StatusMessage {
+  TYPE: string;
+  ID?: string;
+  SESSION_ID?: string;
+  VIEWER_COUNT?: number;
+  IS_LIVE?: any;
 }
 
 export interface ModuleAction {
@@ -44,14 +54,12 @@ const ViewerPage: React.FC = () => {
   const { roomId } = useParams<{ roomId: string }>();
   const navigate = useNavigate();
   const [currentComponent, setCurrentComponent] = useState<ComponentItem | null>(null);
-  const [streamStatus, setStreamStatus] = useState<StreamStatus>({
-    isLive: false,
-    viewerCount: 0,
-    sessionId: roomId,
-  });
+  const [streamStatus, setStreamStatus] = useState<StreamStatus>({isLive: false, viewerCount: 0});
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
   const [pollMode, setPollMode] = useState<"vote" | "result">("vote");
   const [poll, setPoll] = useState(Poll);
+  const { user } = useAppContext();
+  const roomID = roomId ? roomId.toString() : "";
 
   useEffect(() => {
     const cleanupWebSocket = ModuleConnection({
@@ -97,32 +105,51 @@ const ViewerPage: React.FC = () => {
   }, [roomId]);
 
   useEffect(() => {
-    const cleanupStreamWebSocket = StreamConnection({
-      roomID: roomId ?? "",
-      onReceived: (status) => {
-        console.log("Received StatusMessage:", status);
-        if (status.TYPE === "VIEWER_JOIN") {
-          setStreamStatus((prev) => ({
-            ...prev,
-            viewerCount: status.VIEWER_COUNT || 0,
-          }));
-        } else if (status.TYPE === "VIEWER_LEAVE") {
-          setStreamStatus((prev) => ({
-            ...prev,
-            viewerCount: status.VIEWER_COUNT || 0,
-          }));
-        } else if (status.TYPE === "START_STREAM") {
-          setStreamStatus((prev) => ({ ...prev, isLive: true }));
-        } else if (status.TYPE === "STOP_STREAM") {
-          setStreamStatus((prev) => ({ ...prev, isLive: false }));
-        }
-      },
-    });
-    return cleanupStreamWebSocket;
+    const fetchStreamData = async () => {
+      try {
+        const currentStatus = await getStreamStatus(roomID);
+        setStreamStatus({
+          isLive: currentStatus.isLive,
+          viewerCount: currentStatus.viewerCount,
+          roomId: roomID,
+        });
+      } catch (error) {
+        console.error("Error fetching stream data:", error);
+      }
+
+      const cleanupStreamWebSocket = StreamConnection({
+        roomID: roomId ?? "",
+        onReceived: (status) => {
+          console.log("Received StatusMessage:", status);
+          if (status.TYPE === "START_STREAM") {
+            setStreamStatus((prev: any) => ({ ...prev, isLive: true }));
+          } else if (status.TYPE === "STOP_STREAM") {
+            setStreamStatus((prev: any) => ({ ...prev, isLive: false }));
+          }
+        },
+      });
+      return () => {
+        cleanupStreamWebSocket();
+      };
+    };
+    
+    fetchStreamData();
   }, [roomId]);
 
   const handleBack = () => {
     navigate(-1);
+  };
+
+  const sendPollVote = (pollId: number, optionId: number) => {
+    console.log("voting for " + optionId + " in poll with id " + pollId);
+    sendModuleAction({
+      ID: "54",
+      TYPE: "poll_vote",
+      SESSION_ID: roomId ?? "",
+      SENDER: user?.username ?? "",
+      TIMESTAMP: new Date().toISOString(),
+      CONTENT: pollId + "_"  + optionId
+    });
   };
 
   return (
@@ -186,23 +213,22 @@ const ViewerPage: React.FC = () => {
                 )}
 
                 {/* Poll Component */}
-                {currentComponent.type === "poll" && roomId && (
+                {currentComponent.type === "poll" && roomId &&(
                   <PollComponent
                     poll={poll}
                     setPoll={setPoll}
-                    pollMode={pollMode}
-                    setPollMode={setPollMode}
                     isHost={false}
                     roomId={roomId}
+                    onVoteSubmit={sendPollVote}
+                    pollMode={pollMode}
+                    setPollMode={setPollMode}
                   />
                 )}
-
-                <p className="text-white mb-4">{currentComponent.content}</p>
               </div>
             ) : (
-              <div className="text-gray-400 text-center">
-                Waiting for host to share content...
-              </div>
+              <p className="text-gray-400">
+                Waiting for presenter to share content...
+              </p>
             )}
           </Card>
         </div>
@@ -210,14 +236,14 @@ const ViewerPage: React.FC = () => {
         {/* Right Sidebar */}
         <div className="flex-1 bg-gray-800 shadow-lg flex flex-col">
           {/* Room Details Section */}
-          <div className="h-[35%] p-2 border-t border-gray-700">
+          <div className="h-[50%] p-2 border-t border-gray-700">
             <Card className="h-[calc(100%)] overflow-y-auto bg-gray-700 text-white">
               <RoomDetailsComponent />
             </Card>
           </div>
 
           {/* Live Chat */}
-          <div className="h-[65%] p-2 border-t border-gray-700">
+          <div className="h-[50%] p-2 border-t border-gray-700">
             <Card className="h-[calc(100%)] overflow-y-auto bg-gray-700 text-white">
               <LiveChat />
             </Card>
