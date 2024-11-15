@@ -3,6 +3,7 @@ import { Image, FileVideo, Radio, BarChart2, Box } from 'lucide-react';
 import VideoRecorder from '../pages/VideoRecorder';
 import ModelViewer from '@/pages/ModelPage';
 import { ModelProvider } from '@/pages/ModelViewer/ModelContext';
+import ViewOnlyModelViewer from '@/pages/ModelViewer/ViewOnlyModelViewer';
 
 export interface ComponentItem {
   id: string;
@@ -61,11 +62,7 @@ export const Components: ComponentItem[] = [
     title: "3D Model",
     icon: <Box className="w-6 h-6" />,
     link: "/model",
-    htmlContent: (
-      <ModelProvider>
-        <ModelViewer />
-      </ModelProvider>
-    ),
+    htmlContent: <ViewOnlyModelViewer />,
   },
   {
     id: "6",

@@ -1,12 +1,13 @@
-import { Suspense, useState } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Stage, PerspectiveCamera, Environment } from '@react-three/drei';
 import { useGLTF } from '@react-three/drei';
 import { Button } from "@/components/shadcn/ui/button";
 import { Input } from "@/components/shadcn/ui/input";
 import { Label } from "@/components/shadcn/ui/label";
-import { RotateCw, ZoomIn, ZoomOut, Sun, Moon,Maximize2} from 'lucide-react';
+import { RotateCw, ZoomIn, ZoomOut, Sun, Moon, Maximize2 } from 'lucide-react';
 import ModelManager from './ModelViewer/ModelManager';
+import { ModelConfig } from '@/types/components';
+import { useState, useEffect, Suspense } from 'react';
 
 function Model({ url, scale = 1 }: { url: string; scale?: number }) {
   const { scene } = useGLTF(url);
@@ -20,10 +21,65 @@ const ModelViewer = () => {
   const [autoRotate, setAutoRotate] = useState(false);
   const [lightIntensity, setLightIntensity] = useState(0.5);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [modelData, setModelData] = useState<string>('');
 
-  const handleSelectModel = (url: string) => {
-    setModelUrl(url);
+  // Convert base64 data to blob URL when modelData changes
+  useEffect(() => {
+    if (modelData) {
+      try {
+        // Remove data URL prefix if it exists
+        const base64Data = modelData.includes(',') ? modelData.split(',')[1] : modelData;
+        const blob = new Blob([Buffer.from(base64Data, 'base64')], { 
+          type: 'model/gltf-binary' 
+        });
+        const url = URL.createObjectURL(blob);
+        setModelUrl(url);
+
+        // Cleanup
+        return () => {
+          URL.revokeObjectURL(url);
+        };
+      } catch (error) {
+        console.error('Error converting model data:', error);
+      }
+    }
+  }, [modelData]);
+
+  const handleSelectModel = (data: string) => {
+    setModelData(data);
   };
+  
+  const saveConfiguration = () => {
+    const config: ModelConfig = {
+      modelData,
+      backgroundColor,
+      lightIntensity,
+      modelScale,
+      autoRotate
+    };
+    localStorage.setItem('modelConfig', JSON.stringify(config));
+  };
+
+  const loadConfiguration = () => {
+    const savedConfig = localStorage.getItem('modelConfig');
+    if (savedConfig) {
+      try {
+        const config: ModelConfig = JSON.parse(savedConfig);
+        setModelData(config.modelData);
+        setBackgroundColor(config.backgroundColor);
+        setLightIntensity(config.lightIntensity);
+        setModelScale(config.modelScale);
+        setAutoRotate(config.autoRotate);
+      } catch (error) {
+        console.error('Error loading configuration:', error);
+      }
+    }
+  };
+
+  // Load saved configuration on component mount
+  useEffect(() => {
+    loadConfiguration();
+  }, []);
 
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
@@ -81,6 +137,14 @@ const ModelViewer = () => {
               >
                 <Maximize2 className="h-4 w-4" />
               </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={saveConfiguration}
+                disabled={!modelUrl}
+              >
+                Save Configuration
+              </Button>
             </div>
           </>
         ) : (
@@ -123,7 +187,7 @@ const ModelViewer = () => {
             <Label>Lighting Intensity</Label>
             <div className="flex items-center gap-2 mt-2">
               <Moon className="h-4 w-4" />
-              <input
+              <Input
                 type="range"
                 min="0"
                 max="1"
