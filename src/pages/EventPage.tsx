@@ -4,14 +4,15 @@ import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 import { Card } from "@/components/shadcn/ui/card";
 import { ScrollArea } from "@/components/shadcn/ui/scroll-area";
 import { Button } from "@/components/shadcn/ui/button";
-import {ArrowLeft,Plus,ExternalLink,Trash2,GripVertical,} from "lucide-react";
+import { ArrowLeft,Plus,ExternalLink,Trash2,GripVertical } from "lucide-react";
 import LiveChat from "@/components/LiveChat";
 import LiveIndicator from "./components/LiveIndicator";
-import {Dialog,DialogContent,DialogHeader,DialogTitle,} from "@/components/shadcn/ui/dialog";
-import {ModuleConnection,sendModuleAction,sendStreamStatus,StreamConnection} from "@/utils/messaging-client";
+import { Dialog,DialogContent,DialogHeader,DialogTitle } from "@/components/shadcn/ui/dialog";
+import { ModuleConnection,sendModuleAction,sendStreamStatus,StreamConnection } from "@/utils/messaging-client";
 import { useAppContext } from "@/contexts/AppContext";
 import VideoJSSynced from "@/components/VideoJSSynced";
-import { Components, ComponentItem } from "@/data/componentData";
+import { Components, ComponentItem, Poll } from "@/data/componentData";
+import PollComponent from "./components/PollComponent";
 
 interface StreamStatus {
   isLive: boolean;
@@ -25,6 +26,7 @@ export interface ModuleAction {
   SESSION_ID: string;
   SENDER: string;
   TIMESTAMP: string;
+  CONTENT?: string;
 }
 
 export const videoSource =
@@ -53,16 +55,25 @@ const EventPage: React.FC = () => {
   });
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const { user } = useAppContext();
+  const [ voteAction, setVoteAction ] = useState<ModuleAction>();
+  const [poll, setPoll] = useState(Poll);
+  const [pollMode, setPollMode] = useState<"vote"|"result">("vote");
 
   useEffect(() => {
     const cleanupWebSocket = ModuleConnection({
       roomID: roomId ?? "",
       onReceived: (action: ModuleAction) => {
         console.log("Received ModuleAction:", action);
+        if (action.TYPE == "poll_vote" && action.CONTENT) {
+          // to send the vote action triggered by viewer
+          setVoteAction(action);
+        }
+
         const component = Components.find(
           (component) => component.id === action.ID
         );
         if (component) {
+          
           setCurrentComponent(component);
         }
       },
@@ -70,11 +81,11 @@ const EventPage: React.FC = () => {
         setStreamStatus((prev) => ({ ...prev, isLive }));
       },
     });
-
     return cleanupWebSocket;
   }, [roomId]);
 
   useEffect(() => {
+   
     const cleanupStreamWebSocket = StreamConnection({
       roomID: roomId ?? "",
       onReceived: (status) => {
@@ -96,8 +107,8 @@ const EventPage: React.FC = () => {
         }
       },
     });
-
     return cleanupStreamWebSocket;
+    
   }, [roomId]);
 
   const handleGoLive = () => {
@@ -117,13 +128,18 @@ const EventPage: React.FC = () => {
       TYPE: component.type,
       SESSION_ID: roomId ?? "",
       SENDER: user?.username ?? "",
-      TIMESTAMP: new Date().toISOString(),
+      TIMESTAMP: new Date().toISOString()
     });
   };
 
   const handleRedirectToComponent = () => {
     if (currentComponent) {
-      navigate(currentComponent.link);
+      // to replace link with room id where required
+      if (currentComponent.link.endsWith(":roomId") && roomId) {
+        navigate(currentComponent.link.replace(":roomId", roomId));
+      } else {
+        navigate(currentComponent.link);
+      }
     }
   };
 
@@ -172,6 +188,30 @@ const EventPage: React.FC = () => {
       setCurrentComponent(updatedComponents[0] || null);
     }
   };
+
+  const changePollToResultViewForViewers = () => {
+    console.log("to switch poll to result view for viewers");
+    sendModuleAction({
+      ID: "55",
+      TYPE: "poll_result",
+      SESSION_ID: roomId ?? "",
+      SENDER: user?.username ?? "",
+      TIMESTAMP: new Date().toISOString(),
+      CONTENT: JSON.stringify(Poll)
+    });
+  }
+
+  const changeResultToPollViewForViewers = () => {
+    console.log("to switch to poll view for viewers");
+    sendModuleAction({
+      ID: "56",
+      TYPE: "poll_view",
+      SESSION_ID: roomId ?? "",
+      SENDER: user?.username ?? "",
+      TIMESTAMP: new Date().toISOString(),
+      CONTENT: JSON.stringify(Poll)
+    });
+  }
 
   const handleSlides = (index: string) => {
     const selectedSlide = components.filter(component => index == component.id);
@@ -265,6 +305,19 @@ const EventPage: React.FC = () => {
                             className="w-full h-full max-w-[80%] max-h-[80%] flex justify-center items-center"
                           />
                         </div>
+                      )}
+                      {currentComponent.type === "poll" && roomId &&(
+                        <PollComponent
+                          poll={poll}
+                          setPoll={setPoll}
+                          pollMode={pollMode}
+                          setPollMode={setPollMode}
+                          isHost={true}
+                          roomId={roomId}
+                          voteAction={voteAction}
+                          changeToResultViewForViewers={changePollToResultViewForViewers}
+                          changeToPollViewForViewers={changeResultToPollViewForViewers}
+                        />
                       )}
                       <p className="text-white mb-4">
                         {currentComponent.content}

@@ -1,4 +1,3 @@
-import { Label } from "@/pages/CreateWatchPartyPage";
 import { Input } from "./shadcn/ui/input";
 import { RadioGroup, RadioGroupItem } from "./shadcn/ui/radio-group"
 import React, { useEffect, useState } from "react";
@@ -45,7 +44,7 @@ export type ImageObject = {
 // for api calls
 // to create poll in backend
 export type PollRequestData = {
-  partyCode: string;
+  eventCode: string;
   question: string;
   pollOptionRequests: PollOptionRequestData[];
 };
@@ -61,6 +60,12 @@ export type PollOptionRequestData = {
 
 const MIN_SIZE = 2;
 const MAX_SIZE = 8;
+
+export const Label: React.FC<React.LabelHTMLAttributes<HTMLLabelElement>> = ({ children, className, ...props }) => (
+  <label className={`block text-sm font-medium text-stone-50 mb-1 ${className}`} {...props}>
+    {children}
+  </label>
+);
 
 export const PollForm: React.FC<PollProps> = ({ question, setQuestion, optionSize, setOptionSize, pollOptions, setPollOptions, imageList, setImageList }) => {
     function handleOptionSizeChange(newSize: number) {

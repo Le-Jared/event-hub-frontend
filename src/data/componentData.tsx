@@ -2,6 +2,7 @@ import React from 'react';
 import { Image, FileVideo, Radio, BarChart2, Box } from 'lucide-react';
 import VideoRecorder from '../pages/VideoRecorder';
 import ModelViewer from '../pages/ModelPage';
+import { PollResponse } from '@/pages/host/HostCreatePoll';
 
 export interface ComponentItem {
   id: string;
@@ -15,6 +16,36 @@ export interface ComponentItem {
   next?: string;
   prev?: string;
 }
+
+export const Poll: PollResponse = {
+  "pollId": 1,
+  "pollQuestion": "Which device are you using?",
+  "pollOptionList": [
+      {
+          "pollOptionId": 1,
+          "value": "Apple",
+          "description": "",
+          "imageUrl": "1-1-Apple.jpg",
+          "voteCount": 0
+      },
+      {
+          "pollOptionId": 2,
+          "value": "Windows",
+          "description": "",
+          "imageUrl": "1-2-windows.png",
+          "voteCount": 0
+      },
+      {
+        "pollOptionId": 3,
+        "value": "Blueberry",
+        "description": "",
+        "imageUrl": "1-3-blueberry.jpeg",
+        "voteCount": 0
+      }
+  ],
+  "voted": false,
+  "selectedPollOption": null
+};
 
 export const Components: ComponentItem[] = [
   {
@@ -48,11 +79,11 @@ export const Components: ComponentItem[] = [
   {
     id: "4",
     type: "poll",
-    title: "Create Poll",
+    title: "Poll",
     icon: <BarChart2 className="w-6 h-6" />,
     content: "Create an interactive poll",
-    imageUrl: `https://picsum.photos/seed/poll/600/400`,
-    link: "/poll",
+    link: "/poll/:roomId",
+    htmlContent: null,
   },
   {
     id: "5",
@@ -97,4 +128,3 @@ export const Components: ComponentItem[] = [
     prev: "7"
   },
 ];
-
