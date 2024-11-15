@@ -182,7 +182,7 @@ const ModelViewer = () => {
                 type="text"
                 value={backgroundColor}
                 onChange={(e) => setBackgroundColor(e.target.value)}
-                className="flex-1 bg-gray-700 text-white"
+                className="flex-1 text-gray-900"
                 placeholder="#ffffff"
               />
             </div>
