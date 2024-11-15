@@ -23,19 +23,16 @@ const ModelViewer = () => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [modelData, setModelData] = useState<string>('');
 
-  // Convert base64 data to blob URL when modelData changes
+
   useEffect(() => {
     if (modelData) {
       try {
-        // Remove data URL prefix if it exists
         const base64Data = modelData.includes(',') ? modelData.split(',')[1] : modelData;
         const blob = new Blob([Buffer.from(base64Data, 'base64')], { 
           type: 'model/gltf-binary' 
         });
         const url = URL.createObjectURL(blob);
         setModelUrl(url);
-
-        // Cleanup
         return () => {
           URL.revokeObjectURL(url);
         };
@@ -47,6 +44,11 @@ const ModelViewer = () => {
 
   const handleSelectModel = (data: string) => {
     setModelData(data);
+  };
+
+  const clearModel = () => {
+    setModelUrl('');
+    setModelData('');
   };
   
   const saveConfiguration = () => {
@@ -76,7 +78,6 @@ const ModelViewer = () => {
     }
   };
 
-  // Load saved configuration on component mount
   useEffect(() => {
     loadConfiguration();
   }, []);
@@ -94,7 +95,7 @@ const ModelViewer = () => {
   return (
     <div className="bg-gray-900 flex min-h-screen bg-gray-100 p-4">
       {/* Left side - Model Viewer */}
-      <div className="flex-1 bg-white rounded-lg shadow-lg mr-4 relative">
+      <div className="flex-1 rounded-lg shadow-lg mr-4 relative" style={{ backgroundColor: backgroundColor }}>
         {modelUrl ? (
           <>
             <Canvas style={{ height: '80vh' }}>
@@ -161,7 +162,7 @@ const ModelViewer = () => {
 
       {/* Right side - Controls and Model Manager */}
       <div className="bg-gray-700 w-96 space-y-4">
-        <ModelManager onSelectModel={handleSelectModel} />
+        <ModelManager onSelectModel={handleSelectModel} onClearModel={clearModel} />
 
         <div className="bg-gray-800 text-white rounded-lg shadow-lg p-4">
           <h2 className="text-2xl font-bold mb-4">Viewer Controls</h2>
@@ -181,7 +182,7 @@ const ModelViewer = () => {
                 type="text"
                 value={backgroundColor}
                 onChange={(e) => setBackgroundColor(e.target.value)}
-                className="flex-1 text-gray"
+                className="flex-1 bg-gray-700 text-white"
                 placeholder="#ffffff"
               />
             </div>

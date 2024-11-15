@@ -11,9 +11,10 @@ interface ModelFile {
 
 interface ModelManagerProps {
   onSelectModel: (data: string) => void;
+  onClearModel: () => void;
 }
 
-const ModelManager: React.FC<ModelManagerProps> = ({ onSelectModel }) => {
+const ModelManager: React.FC<ModelManagerProps> = ({ onSelectModel, onClearModel }) => {
   const [models, setModels] = useState<ModelFile[]>([]);
 
   useEffect(() => {
@@ -42,12 +43,14 @@ const ModelManager: React.FC<ModelManagerProps> = ({ onSelectModel }) => {
         saveModels(updatedModels);
       };
       reader.readAsDataURL(file);
+      event.target.value = '';
     }
   };
 
   const handleDeleteModel = (modelToDelete: ModelFile) => {
     const updatedModels = models.filter(model => model.name !== modelToDelete.name);
     saveModels(updatedModels);
+    onClearModel();
   };
 
   return (
