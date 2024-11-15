@@ -4,11 +4,27 @@ import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 import { Card } from "@/components/shadcn/ui/card";
 import { ScrollArea } from "@/components/shadcn/ui/scroll-area";
 import { Button } from "@/components/shadcn/ui/button";
-import { ArrowLeft,Plus,ExternalLink,Trash2,GripVertical } from "lucide-react";
+import {
+  ArrowLeft,
+  Plus,
+  ExternalLink,
+  Trash2,
+  GripVertical,
+} from "lucide-react";
 import LiveChat from "@/components/LiveChat";
 import LiveIndicator from "./components/LiveIndicator";
-import { Dialog,DialogContent,DialogHeader,DialogTitle } from "@/components/shadcn/ui/dialog";
-import { ModuleConnection,sendModuleAction,sendStreamStatus,StreamConnection } from "@/utils/messaging-client";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/shadcn/ui/dialog";
+import {
+  ModuleConnection,
+  sendModuleAction,
+  sendStreamStatus,
+  StreamConnection,
+} from "@/utils/messaging-client";
 import { useAppContext } from "@/contexts/AppContext";
 import VideoJSSynced from "@/components/VideoJSSynced";
 import { Components, ComponentItem, Poll } from "@/data/componentData";
@@ -47,14 +63,19 @@ const videoJSOptions = {
 const EventPage: React.FC = () => {
   const { roomId } = useParams<{ roomId: string }>();
   const navigate = useNavigate();
-  const [currentComponent, setCurrentComponent] =useState<ComponentItem | null>(null);
+  const [currentComponent, setCurrentComponent] =
+    useState<ComponentItem | null>(null);
   const [components, setComponents] = useState<ComponentItem[]>(Components);
-  const [streamStatus, setStreamStatus] = useState<StreamStatus>({isLive: false, viewerCount: 0, sessionId: roomId});
+  const [streamStatus, setStreamStatus] = useState<StreamStatus>({
+    isLive: false,
+    viewerCount: 0,
+    sessionId: roomId,
+  });
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const { user } = useAppContext();
-  const [ voteAction, setVoteAction ] = useState<ModuleAction>();
+  const [voteAction, setVoteAction] = useState<ModuleAction>();
   const [poll, setPoll] = useState(Poll);
-  const [pollMode, setPollMode] = useState<"vote"|"result">("vote");
+  const [pollMode, setPollMode] = useState<"vote" | "result">("vote");
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
 
   useEffect(() => {
@@ -71,7 +92,6 @@ const EventPage: React.FC = () => {
           (component) => component.id === action.ID
         );
         if (component) {
-          
           setCurrentComponent(component);
         }
       },
@@ -83,7 +103,6 @@ const EventPage: React.FC = () => {
   }, [roomId]);
 
   useEffect(() => {
-   
     const cleanupStreamWebSocket = StreamConnection({
       roomID: roomId ?? "",
       onReceived: (status) => {
@@ -106,7 +125,6 @@ const EventPage: React.FC = () => {
       },
     });
     return cleanupStreamWebSocket;
-    
   }, [roomId]);
 
   const handleGoLive = () => {
@@ -126,7 +144,7 @@ const EventPage: React.FC = () => {
       TYPE: component.type,
       SESSION_ID: roomId ?? "",
       SENDER: user?.username ?? "",
-      TIMESTAMP: new Date().toISOString()
+      TIMESTAMP: new Date().toISOString(),
     });
   };
 
@@ -184,9 +202,9 @@ const EventPage: React.FC = () => {
       SESSION_ID: roomId ?? "",
       SENDER: user?.username ?? "",
       TIMESTAMP: new Date().toISOString(),
-      CONTENT: JSON.stringify(Poll)
+      CONTENT: JSON.stringify(Poll),
     });
-  }
+  };
 
   const changeResultToPollViewForViewers = () => {
     console.log("to switch to poll view for viewers");
@@ -196,12 +214,14 @@ const EventPage: React.FC = () => {
       SESSION_ID: roomId ?? "",
       SENDER: user?.username ?? "",
       TIMESTAMP: new Date().toISOString(),
-      CONTENT: JSON.stringify(Poll)
+      CONTENT: JSON.stringify(Poll),
     });
-  }
+  };
 
   const handleSlides = (index: string) => {
-    const selectedSlide = components.filter(component => index == component.id);
+    const selectedSlide = components.filter(
+      (component) => index == component.id
+    );
     setCurrentComponent(selectedSlide[0]);
     sendModuleAction({
       ID: selectedSlide[0].id,
@@ -256,27 +276,30 @@ const EventPage: React.FC = () => {
                       <h2 className="text-xl font-semibold mb-4 text-white">
                         {currentComponent.title}
                       </h2>
-                      {currentComponent.type === "slide" && currentComponent.images && (
-                        <div className="w-full h-full">
-                          <SlideShow
-                            images={currentComponent.images}
-                            isHost={true}
-                            currentIndex={currentSlideIndex}
-                            onSlideChange={(index) => {
-                              setCurrentSlideIndex(index);
-                              // Broadcast slide change to viewers
-                              sendModuleAction({
-                                ID: currentComponent.id,
-                                TYPE: "slide_change",
-                                SESSION_ID: roomId ?? "",
-                                SENDER: user?.username ?? "",
-                                TIMESTAMP: new Date().toISOString(),
-                                CONTENT: JSON.stringify({ slideIndex: index })
-                              });
-                            }}
-                          />
-                        </div>
-                      )}
+                      {currentComponent.type === "slide" &&
+                        currentComponent.images && (
+                          <div className="w-full h-full">
+                            <SlideShow
+                              images={currentComponent.images}
+                              isHost={true}
+                              currentIndex={currentSlideIndex}
+                              onSlideChange={(index) => {
+                                setCurrentSlideIndex(index);
+                                // Broadcast slide change to viewers
+                                sendModuleAction({
+                                  ID: currentComponent.id,
+                                  TYPE: "slide_change",
+                                  SESSION_ID: roomId ?? "",
+                                  SENDER: user?.username ?? "",
+                                  TIMESTAMP: new Date().toISOString(),
+                                  CONTENT: JSON.stringify({
+                                    slideIndex: index,
+                                  }),
+                                });
+                              }}
+                            />
+                          </div>
+                        )}
                       {currentComponent.htmlContent &&
                         !currentComponent.imageUrl && (
                           <div className="max-w-full max-h-full overflow-auto">
@@ -293,7 +316,7 @@ const EventPage: React.FC = () => {
                           />
                         </div>
                       )}
-                      {currentComponent.type === "poll" && roomId &&(
+                      {currentComponent.type === "poll" && roomId && (
                         <PollComponent
                           poll={poll}
                           setPoll={setPoll}
@@ -302,8 +325,12 @@ const EventPage: React.FC = () => {
                           isHost={true}
                           roomId={roomId}
                           voteAction={voteAction}
-                          changeToResultViewForViewers={changePollToResultViewForViewers}
-                          changeToPollViewForViewers={changeResultToPollViewForViewers}
+                          changeToResultViewForViewers={
+                            changePollToResultViewForViewers
+                          }
+                          changeToPollViewForViewers={
+                            changeResultToPollViewForViewers
+                          }
                         />
                       )}
                       <p className="text-white mb-4">
