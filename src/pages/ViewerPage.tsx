@@ -12,6 +12,7 @@ import { getStreamStatus } from "@/utils/api-client";
 import VideoJSSynced from "@/components/VideoJSSynced";
 import { useEffect, useState } from "react";
 import { useAppContext } from "@/contexts/AppContext";
+import PollComponent from "./components/PollComponent";
 
 interface ComponentItem {
   id: string;
