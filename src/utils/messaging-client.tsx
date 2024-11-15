@@ -3,7 +3,7 @@ import SockJS from "sockjs-client";
 import * as apiClient from "@/utils/api-client";
 import { Message } from "@/components/LiveChat";
 import { Emoji } from "@/components/EmojiReaction";
-import { ComponentItem, ModuleAction } from "@/pages/EventPage";
+import { ModuleAction } from "@/pages/EventPage";
 import Module from "module";
 import { StatusMessage } from "@/pages/ViewerPage";
 
