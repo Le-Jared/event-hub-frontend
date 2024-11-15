@@ -132,17 +132,6 @@ const EventPage: React.FC = () => {
     });
   };
 
-  const handleRedirectToComponent = () => {
-    if (currentComponent) {
-      // to replace link with room id where required
-      if (currentComponent.link.endsWith(":roomId") && roomId) {
-        navigate(currentComponent.link.replace(":roomId", roomId));
-      } else {
-        navigate(currentComponent.link);
-      }
-    }
-  };
-
   const handleBack = () => {
     navigate(-1);
   };
