@@ -38,7 +38,6 @@ export interface StatusMessage {
   IS_LIVE?: any;
 }
 
-
 const ViewerPage: React.FC = () => {
   const [poll, setPoll] = useState(Poll);
   const [currentComponent, setCurrentComponent] = useState<ComponentItem | null>(null);
@@ -51,16 +50,17 @@ const ViewerPage: React.FC = () => {
   const { user } = useAppContext();
   const [pollMode, setPollMode] = useState<"vote"|"result">("vote");
 
-
   useEffect(() => {
     const cleanupWebSocket = ModuleConnection({
       roomID: roomID,
       onReceived: (action: ModuleAction) => {
         console.log("Received ModuleAction:", action);
+        // to switch to result view
         if (action.TYPE == "poll_result" && action.CONTENT) {
           setPoll(JSON.parse(action.CONTENT))
           setPollMode("result");
         }
+        // to switch to poll view
         if (action.TYPE == "poll_view" && action.CONTENT) {
           setPoll(JSON.parse(action.CONTENT))
           setPollMode("vote");
@@ -120,6 +120,7 @@ const ViewerPage: React.FC = () => {
   };
 
   const sendPollVote = (pollId: number, optionId: number) => {
+    console.log("voting for " + optionId + " in poll with id " + pollId);
     sendModuleAction({
       ID: "54",
       TYPE: "poll_vote",

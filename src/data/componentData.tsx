@@ -79,7 +79,7 @@ export const Components: ComponentItem[] = [
   {
     id: "4",
     type: "poll",
-    title: "Create Poll",
+    title: "Poll",
     icon: <BarChart2 className="w-6 h-6" />,
     content: "Create an interactive poll",
     link: "/poll/:roomId",

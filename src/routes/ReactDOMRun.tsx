@@ -17,7 +17,6 @@ import HostCreateEvent from "@/pages/host/HostCreateEvent";
 import HostManageEvent from "@/pages/host/HostManageEvent";
 import ViewerPage from "@/pages/ViewerPage";
 import Record from "@/pages/VideoRecorder";
-import HostCreatePoll from "@/pages/host/HostCreatePoll";
 
 const router = createBrowserRouter([
   {
@@ -69,10 +68,6 @@ const router = createBrowserRouter([
       {
         path: "host/manage",
         element: <HostManageEvent />,
-      },
-      {
-        path: "poll/:roomId",
-        element: <HostCreatePoll />
       }
     ],
   },

@@ -4,11 +4,11 @@ import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 import { Card } from "@/components/shadcn/ui/card";
 import { ScrollArea } from "@/components/shadcn/ui/scroll-area";
 import { Button } from "@/components/shadcn/ui/button";
-import {ArrowLeft,Plus,ExternalLink,Trash2,GripVertical,} from "lucide-react";
+import { ArrowLeft,Plus,ExternalLink,Trash2,GripVertical } from "lucide-react";
 import LiveChat from "@/components/LiveChat";
 import LiveIndicator from "./components/LiveIndicator";
-import {Dialog,DialogContent,DialogHeader,DialogTitle,} from "@/components/shadcn/ui/dialog";
-import {ModuleConnection,sendModuleAction,sendStreamStatus,StreamConnection} from "@/utils/messaging-client";
+import { Dialog,DialogContent,DialogHeader,DialogTitle } from "@/components/shadcn/ui/dialog";
+import { ModuleConnection,sendModuleAction,sendStreamStatus,StreamConnection } from "@/utils/messaging-client";
 import { useAppContext } from "@/contexts/AppContext";
 import VideoJSSynced from "@/components/VideoJSSynced";
 import { Components, ComponentItem, Poll } from "@/data/componentData";
@@ -65,9 +65,7 @@ const EventPage: React.FC = () => {
       onReceived: (action: ModuleAction) => {
         console.log("Received ModuleAction:", action);
         if (action.TYPE == "poll_vote" && action.CONTENT) {
-          console.log("test");
-          // const ids = action.CONTENT.split("_");
-          // incrementVote(Number(ids[0]), Number(ids[1]));
+          // to send the vote action triggered by viewer
           setVoteAction(action);
         }
 
@@ -125,7 +123,6 @@ const EventPage: React.FC = () => {
 
   const handleComponentClick = (component: ComponentItem) => {
     setCurrentComponent(component);
-    console.log(component, "com");
     sendModuleAction({
       ID: component.id,
       TYPE: component.type,
@@ -137,6 +134,7 @@ const EventPage: React.FC = () => {
 
   const handleRedirectToComponent = () => {
     if (currentComponent) {
+      // to replace link with room id where required
       if (currentComponent.link.endsWith(":roomId") && roomId) {
         navigate(currentComponent.link.replace(":roomId", roomId));
       } else {
@@ -191,8 +189,8 @@ const EventPage: React.FC = () => {
     }
   };
 
-  const changeToResultViewForViewers = () => {
-    console.log("will send updated poll to viewers too");
+  const changePollToResultViewForViewers = () => {
+    console.log("to switch poll to result view for viewers");
     sendModuleAction({
       ID: "55",
       TYPE: "poll_result",
@@ -203,8 +201,8 @@ const EventPage: React.FC = () => {
     });
   }
 
-  const changeToPollViewForViewers = () => {
-    console.log("will send updated poll to viewers too");
+  const changeResultToPollViewForViewers = () => {
+    console.log("to switch to poll view for viewers");
     sendModuleAction({
       ID: "56",
       TYPE: "poll_view",
@@ -214,16 +212,6 @@ const EventPage: React.FC = () => {
       CONTENT: JSON.stringify(Poll)
     });
   }
-
-
-  // const incrementVote = (pollId: number, pollOptionId: number) => {
-  //   console.log("Increment vote for " + pollOptionId + " in " + pollId);
-  // }
-
-  // const switchToPollResult = () => {
-  //   console.log("switch");
-  //   setPollMode("result");
-  // }
 
   const handleSlides = (index: string) => {
     const selectedSlide = components.filter(component => index == component.id);
@@ -327,8 +315,8 @@ const EventPage: React.FC = () => {
                           isHost={true}
                           roomId={roomId}
                           voteAction={voteAction}
-                          changeToResultViewForViewers={changeToResultViewForViewers}
-                          changeToPollViewForViewers={changeToPollViewForViewers}
+                          changeToResultViewForViewers={changePollToResultViewForViewers}
+                          changeToPollViewForViewers={changeResultToPollViewForViewers}
                         />
                       )}
                       <p className="text-white mb-4">
