@@ -59,15 +59,17 @@ EventHub creates an immersive virtual environment where presenters can showcase 
 - Interactive Workshops
 
 ## Screenshots
+###
 ![image](https://github.com/user-attachments/assets/de3750c3-d30f-48fb-a982-6418520f979d)
-
+###
 ![image](https://github.com/user-attachments/assets/eccfd957-f9f1-4c54-92de-110462eda06b)
-
+###
 ![image](https://github.com/user-attachments/assets/eafb4788-6536-4d23-bb74-43ef6bb7e3d9)
-
+###
 ![image](https://github.com/user-attachments/assets/29b27f55-1436-444b-9449-885fe57ad0f4)
--AI Powered Support
-![image](https://github.com/user-attachments/assets/0262fe92-e533-4fd0-a480-86d8291154ca)
+### AI Powered Support
+![image](https://github.com/user-attachments/assets/7e95c632-0e89-4959-9d23-87fdb31d874f)
+
 
 
 
