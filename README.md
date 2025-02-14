@@ -17,7 +17,7 @@ EventHub is a comprehensive virtual event platform that transforms online produc
   - Video Playback
   - Dynamic Slideshow Presentations
   - 3D Model Demonstrations
-  - Interactive Q&A Sessions
+  - Interactive Q&A Sessions (AI Moderator)
   - Real-time Polls
   - Live Chat with Emoji Support
 
@@ -60,6 +60,16 @@ EventHub creates an immersive virtual environment where presenters can showcase 
 
 ## Screenshots
 ![image](https://github.com/user-attachments/assets/de3750c3-d30f-48fb-a982-6418520f979d)
+
+![image](https://github.com/user-attachments/assets/eccfd957-f9f1-4c54-92de-110462eda06b)
+
+![image](https://github.com/user-attachments/assets/eafb4788-6536-4d23-bb74-43ef6bb7e3d9)
+
+![image](https://github.com/user-attachments/assets/29b27f55-1436-444b-9449-885fe57ad0f4)
+-AI Powered Support
+![image](https://github.com/user-attachments/assets/0262fe92-e533-4fd0-a480-86d8291154ca)
+
+
 
 ## Tech Stack
 - BE: SpringBoot
