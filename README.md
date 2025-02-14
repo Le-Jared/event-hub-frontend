@@ -1,57 +1,71 @@
-# Quickstart
-```
-git clone
-npm install
-npm run dev
-```
+# EventHub - Interactive Virtual Event Platform
 
-Dont forget to run linter before pushing code.
-```
-npm run lint
-npx eslint . --fix
-```
+## Overview
+EventHub is a comprehensive virtual event platform that transforms online product launches, webinars, and presentations into engaging, interactive experiences. Our platform bridges the gap between hosts and audiences through rich features and real-time engagement tools.
 
-# Screenshots
+## 🌟 Key Features
 
+### For Attendees
+- **Event Waiting Room**
+  - Scheduled event countdown timer
+  - Interactive mini-games (Battleship, Checkers, Tetris, 2048)
+  - Seamless event entry system
 
+### For Hosts
+- **Versatile Content Modules**
+  - Live Webcam Broadcasting
+  - Video Playback
+  - Dynamic Slideshow Presentations
+  - 3D Model Demonstrations
+  - Interactive Q&A Sessions
+  - Real-time Polls
+  - Live Chat with Emoji Support
 
-# Objectives
-- Create a project that covers the full SDLC to simulate real-world working environment.
-- Adopt an island architecture, each service layer operates independently and can be seamlessly swapped out.
-- Unit tested and documented, guaranteeing the system will continue to function correctly after any changes to code or team members.
+### Engagement Tools
+- **Live Chat**
+  - Real-time audience interaction
+  - Emoji support for expressive communication
+  - Message threading and moderation
 
-# Project Roadmap
-| Sprint 1                        | Sprint 1.5                   | Sprint 2                   | Sprint 2.5             |
-|---------------------------------|------------------------------|----------------------------|------------------------|
-| Database Design (ERD)           | Clear Backlog (Setup)        | Clear Backlog (FE)         | Clear Backlog (BE)     |
-| Setup FE, BE                    | Setup Component Manager      | Build Database Layer       | API Integration        |
-| Connect FE to BE                | Build UI Component Module    | Build Service Layer        | Unit Testing           |
-| Setup Error Management          | Unit Testing                 | Unit Testing               |                        |
-| Deploy and Host on Vercel       |                              |                            |                        |
-| Setup CI, CD                    |                              |                            |                        |
+### Smart Features
+- **AI-Powered Support**
+  - Speech-to-text chatbot for product inquiries
+  - Real-time sentiment analysis
+  - Automated response system
 
-# Features (MVP)
-- Dashboard: Display list of movies
-- Search: Implement full text search to search for movies
-- Video Player: Convert MP4 to HLS, implement streaming and buffering
-- Login: Enable users to sign up and login
-- Watch History I: Store watch history of user (episodes)
-- Watch History II: Store watch history of user (watch duration for each episode)
-- Watch Party I: Users can host or join a session to watch a video together
-- Watch Party II: Users can trigger interactive games, or events during watch parties
-- Live Messaging: Users can send instant messages in watch party
+### Analytics & Monitoring
+- **Live Dashboard**
+  - Real-time viewer count
+  - Audience engagement metrics
+  - Event status monitoring
 
-# Features (Extended)
-- Comment Section
-- Spoiler Flags for Comments
-- Review and Ratings
-- History Based Recommendation System
-- Favourites Page
-- Dark Mode
-- Sharing Link
-- Friend List
+## Why EventHub?
+EventHub creates an immersive virtual environment where presenters can showcase products, engage with their audience, and deliver impactful presentations. Whether you're launching a product, hosting a webinar, or conducting a virtual meeting, EventHub provides all the tools needed for a successful online event.
 
-# Stack
+## Benefits
+- 🎯 Engage audiences with interactive features
+- 🔄 Seamless switching between different content types
+- 💬 Real-time communication and feedback
+- 🤖 AI-powered assistance and analytics
+- 🎮 Entertaining waiting room experience
+- 📊 Comprehensive event analytics
+
+## Perfect For
+- Product Launches
+- Virtual Conferences
+- Webinars
+- Corporate Presentations
+- Online Training Sessions
+- Interactive Workshops
+
+## Screenshots
+![image](https://github.com/user-attachments/assets/de3750c3-d30f-48fb-a982-6418520f979d)
+
+## Tech Stack
 - BE: SpringBoot
 - FE: React, Tailwind, RadixUI
 - Testing: Vitest, React-Testing-Library
+
+---
+
+*EventHub - Where Virtual Events Come Alive*
