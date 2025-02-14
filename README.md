@@ -12,7 +12,7 @@ npx eslint . --fix
 ```
 
 # Screenshots
-<img width="1366" alt="Screenshot 2025-02-14 at 12 34 46 PM" src="https://github.com/user-attachments/assets/eedd22dd-cd0b-431a-89b3-a3d027b8b927" />
+![image](https://github.com/user-attachments/assets/d397516d-2a4d-4355-bb17-9d099b0dfead)
 
 
 # Objectives
