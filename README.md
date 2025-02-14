@@ -12,7 +12,7 @@ npx eslint . --fix
 ```
 
 # Screenshots
-![image](https://github.com/user-attachments/assets/d397516d-2a4d-4355-bb17-9d099b0dfead)
+
 
 
 # Objectives
