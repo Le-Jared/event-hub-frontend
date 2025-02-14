@@ -11,8 +11,9 @@ npm run lint
 npx eslint . --fix
 ```
 
-Figma Link (request for access):
-- https://www.figma.com/design/yN5sjkeHbJpEqOk7xMLMuh/StreamHub?node-id=0-1&t=dcrw2f3aemvsZPQP-0
+# Screenshots
+<img width="1366" alt="Screenshot 2025-02-14 at 12 34 46 PM" src="https://github.com/user-attachments/assets/eedd22dd-cd0b-431a-89b3-a3d027b8b927" />
+
 
 # Objectives
 - Create a project that covers the full SDLC to simulate real-world working environment.
