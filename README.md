@@ -67,7 +67,7 @@ EventHub creates an immersive virtual environment where presenters can showcase 
 ![image](https://github.com/user-attachments/assets/eafb4788-6536-4d23-bb74-43ef6bb7e3d9)
 ### Live Sentiment Analysis of Chat
 ![image](https://github.com/user-attachments/assets/29b27f55-1436-444b-9449-885fe57ad0f4)
-### AI Powered Chat Support
+### AI Powered Voice to Text Chatbot
 ![image](https://github.com/user-attachments/assets/7e95c632-0e89-4959-9d23-87fdb31d874f)
 
 
